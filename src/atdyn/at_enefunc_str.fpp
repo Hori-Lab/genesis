@@ -339,6 +339,9 @@ module at_enefunc_str_mod
     integer                       :: num_pwmcosns_terms
     integer                       :: num_pwmcosns_resid
 
+    integer                       :: num_tis_lstack
+    logical                       :: tis_lstack_calc
+
     integer                       :: istart_bond,          iend_bond
     integer                       :: istart_angle,         iend_angle
     integer                       :: istart_urey,          iend_urey
@@ -366,6 +369,8 @@ module at_enefunc_str_mod
     integer                       :: istart_bond_quartic,  iend_bond_quartic
     ! ~CG~ 3SPN.2C DNA: base stacking
     integer                       :: istart_base_stack,    iend_base_stack
+    ! TIS
+    integer                       :: istart_tis_lstack, iend_tis_lstack
 
     ! bond (size = num_bonds)
     integer,          allocatable :: bond_list(:,:)
@@ -500,6 +505,18 @@ module at_enefunc_str_mod
     real(wp)                      :: cgDNA_exv_epsilon
     logical                       :: cg_infinite_DNA
 
+    ! TIS local base stacking (size = num_tis_lstack)
+    integer,          allocatable :: tis_lstack_list(:,:)
+    real(wp),         allocatable :: tis_lstack_h(:)
+    real(wp),         allocatable :: tis_lstack_s(:)
+    real(wp),         allocatable :: tis_lstack_Tm(:)
+    real(wp),         allocatable :: tis_lstack_Kr(:)
+    real(wp),         allocatable :: tis_lstack_Kphi1(:)
+    real(wp),         allocatable :: tis_lstack_Kphi2(:)
+    real(wp),         allocatable :: tis_lstack_r0(:)
+    real(wp),         allocatable :: tis_lstack_phi10(:)
+    real(wp),         allocatable :: tis_lstack_phi20(:)
+
     ! ~CG~ : debye-huckel ele
     real(wp),         allocatable :: cg_charge(:)
     real(wp)                      :: cg_pro_DNA_ele_scale_Q
@@ -613,6 +630,7 @@ module at_enefunc_str_mod
     real(wp),         allocatable :: nb14_qq_scale(:,:)
     real(wp),         allocatable :: nb14_lj_scale(:,:)
     real(wp),         allocatable :: work(:,:)
+    real(wp),         allocatable :: work_tis_stack(:,:,:) ! not using work as there are 3x7 = 21 elements needed.
 
     real(wp)                      :: nb14_qq_scale_c19
 
@@ -917,6 +935,8 @@ module at_enefunc_str_mod
   integer,      public, parameter :: EneFuncCGIDRKH       = 53
   integer,      public, parameter :: EneFuncCGKH          = 54
   integer,      public, parameter :: EneFuncCGKHmol       = 55
+  ! TIS
+  integer,      public, parameter :: EneFuncTISLocalStack = 56
 
   ! parameters
   integer,      public, parameter :: ForcefieldCHARMM     = 1
@@ -1088,6 +1108,7 @@ contains
     enefunc%num_pwmcos_resid        = 0
     enefunc%num_pwmcosns_terms      = 0
     enefunc%num_pwmcosns_resid      = 0
+    enefunc%num_tis_lstack          = 0
     
     enefunc%istart_bond             = 0
     enefunc%iend_bond               = 0
@@ -1125,6 +1146,10 @@ contains
     enefunc%iend_vsiten             = 0
     enefunc%istart_restraint        = 0
     enefunc%iend_restraint          = 0
+
+    ! TIS
+    enefunc%istart_tis_lstack       = 0
+    enefunc%iend_tis_lstack         = 0
 
     enefunc%forcefield              = ForcefieldCHARMM
     enefunc%output_style            = OutputStyleCHARMM
@@ -1204,6 +1229,7 @@ contains
     enefunc%cg_IDR_HPS_calc         = .false.
     enefunc%cg_IDR_KH_calc          = .false.
     enefunc%cg_KH_calc              = .false.
+    enefunc%tis_lstack_calc         = .false.
 
     enefunc%gamd_use                = .false.
 
@@ -1854,6 +1880,46 @@ contains
       enefunc%cg_IDR_KH_is_IDR    (1:var_size)               = .false.
       enefunc%cg_IDR_KH_sigma_half(1:var_size)               = 0.0
       enefunc%cg_IDR_KH_epsilon_D (1:var_size2, 1:var_size2) = 0.0
+
+    case(EneFuncTISLocalStack)
+      ! TIS Local stack
+      if (allocated(enefunc%tis_lstack_list)) then
+        if (size(enefunc%tis_lstack_list(1,:)) == var_size) return
+        deallocate(enefunc%tis_lstack_list,  &
+                   enefunc%tis_lstack_h,     &
+                   enefunc%tis_lstack_s,     &
+                   enefunc%tis_lstack_Tm,    &
+                   enefunc%tis_lstack_Kr,    &
+                   enefunc%tis_lstack_Kphi1, &
+                   enefunc%tis_lstack_Kphi2, &
+                   enefunc%tis_lstack_r0,    &
+                   enefunc%tis_lstack_phi10, &
+                   enefunc%tis_lstack_phi20, &
+                   stat = dealloc_stat)
+      end if
+
+      allocate(enefunc%tis_lstack_list(7,var_size),  &
+               enefunc%tis_lstack_h(var_size),       &
+               enefunc%tis_lstack_s(var_size),       &
+               enefunc%tis_lstack_Tm(var_size),      &
+               enefunc%tis_lstack_Kr(var_size),      &
+               enefunc%tis_lstack_Kphi1(var_size),   &
+               enefunc%tis_lstack_Kphi2(var_size),   &
+               enefunc%tis_lstack_r0(var_size),      &
+               enefunc%tis_lstack_phi10(var_size),   &
+               enefunc%tis_lstack_phi20(var_size),   &
+               stat = alloc_stat)
+
+      enefunc%tis_lstack_list (1:7, 1:var_size) = 0
+      enefunc%tis_lstack_h    (1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_s    (1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_Tm   (1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_Kr   (1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_Kphi1(1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_Kphi2(1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_r0   (1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_phi10(1:var_size     ) = 0.0_wp
+      enefunc%tis_lstack_phi20(1:var_size     ) = 0.0_wp
 
     case(EneFuncNbon)
 
@@ -3333,6 +3399,22 @@ contains
         deallocate(enefunc%gamd%f_rest, stat = dealloc_stat)
       end if
 
+    case (EneFuncTISLocalStack)
+
+      if (allocated(enefunc%tis_lstack_list)) then
+        deallocate(enefunc%tis_lstack_list,  &
+                   enefunc%tis_lstack_h,     &
+                   enefunc%tis_lstack_s,     &
+                   enefunc%tis_lstack_Tm,    &
+                   enefunc%tis_lstack_Kr,    &
+                   enefunc%tis_lstack_Kphi1, &
+                   enefunc%tis_lstack_Kphi2, &
+                   enefunc%tis_lstack_r0,    &
+                   enefunc%tis_lstack_phi10, &
+                   enefunc%tis_lstack_phi20, &
+                   stat = dealloc_stat)
+      endif
+
     case default
 
       call error_msg('Dealloc_Enefunc> bad variable')
@@ -3414,6 +3496,7 @@ contains
     call dealloc_enefunc(enefunc, EneFuncGamdRest)
     call dealloc_enefunc(enefunc, EneFuncCGIDRHPS)
     call dealloc_enefunc(enefunc, EneFuncCGIDRKH)
+    call dealloc_enefunc(enefunc, EneFuncTISLocalStack)
 
     return
 

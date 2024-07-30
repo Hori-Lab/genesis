@@ -50,6 +50,7 @@ module at_enefunc_gromacs_mod
   private :: setup_enefunc_cg_general
   private :: setup_enefunc_cgDNA_base_stack
   private :: setup_enefunc_cgDNA_nonb
+  private :: setup_enefunc_tis_lstack
   private :: setup_enefunc_cg_ele
   private :: setup_enefunc_cg_KH
   private :: setup_enefunc_cg_PWMcos
@@ -140,6 +141,9 @@ contains
       !
       call setup_enefunc_cgDNA_base_stack(ene_info, grotop, molecule, enefunc)
 
+      ! CG TIS local stack
+      !
+      call setup_enefunc_tis_lstack(ene_info, grotop, molecule, enefunc)
     end if
 
 
@@ -277,6 +281,11 @@ contains
 
     allocate(enefunc%work(MAXWRK,nwork), stat=alloc_stat)
     if (alloc_stat /= 0) call error_msg_alloc
+
+    if (enefunc%tis_lstack_calc) then
+      allocate(enefunc%work_tis_stack(3, 7, enefunc%num_tis_lstack), stat=alloc_stat)
+      if (alloc_stat /= 0) call error_msg_alloc
+    endif
 
     ! write summary of energy function
     !
@@ -3597,6 +3606,85 @@ contains
     return
 
   end subroutine setup_enefunc_cg_nonlocal_exclusion
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    setup_enefunc_tis_lstack
+  !> @brief        define local stack term in potential energy function
+  !! @authors      NH
+  !! @param[in]    ene_info : ENERGY section control parameters information
+  !! @param[in]    grotop   : GROMACS parameter topology information
+  !! @param[in]    molecule : molecule including molecular information
+  !! @param[inout] enefunc  : potential energy functions information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine setup_enefunc_tis_lstack(ene_info, grotop, molecule, enefunc)
+
+    ! formal arguments
+    type(s_ene_info),        intent(in)    :: ene_info
+    type(s_grotop),          intent(in)    :: grotop
+    type(s_molecule),        intent(in)    :: molecule
+    type(s_enefunc),         intent(inout) :: enefunc
+
+    ! local variables
+    integer                  :: i, j, k
+    integer                  :: istart, iend
+    integer                  :: nstack
+
+    type(s_grotop_mol), pointer :: gromol
+
+    nstack = 0
+    do i = 1, grotop%num_molss
+      gromol => grotop%molss(i)%moltype%mol
+      do j = 1, grotop%molss(i)%count
+        do k = 1, gromol%num_tis_lstack
+          nstack = nstack + 1
+        end do
+      end do
+    end do
+
+    call alloc_enefunc(enefunc, EneFuncTISLocalStack, nstack)
+
+    nstack = 0
+    do i = 1, grotop%num_molss
+      gromol => grotop%molss(i)%moltype%mol
+      do j = 1, grotop%molss(i)%count
+        do k = 1, gromol%num_tis_lstack
+          nstack = nstack + 1
+          enefunc%tis_lstack_list(1, nstack) = gromol%tislstacks(k)%atom_idx1
+          enefunc%tis_lstack_list(2, nstack) = gromol%tislstacks(k)%atom_idx2
+          enefunc%tis_lstack_list(3, nstack) = gromol%tislstacks(k)%atom_idx3
+          enefunc%tis_lstack_list(4, nstack) = gromol%tislstacks(k)%atom_idx4
+          enefunc%tis_lstack_list(5, nstack) = gromol%tislstacks(k)%atom_idx5
+          enefunc%tis_lstack_list(6, nstack) = gromol%tislstacks(k)%atom_idx6
+          enefunc%tis_lstack_list(7, nstack) = gromol%tislstacks(k)%atom_idx7
+          enefunc%tis_lstack_h(nstack)  = gromol%tislstacks(k)%h
+          enefunc%tis_lstack_s(nstack)  = gromol%tislstacks(k)%s
+          enefunc%tis_lstack_Tm(nstack) = gromol%tislstacks(k)%Tm
+          enefunc%tis_lstack_r0(nstack) = gromol%tislstacks(k)%r0 * 10.0_wp
+          enefunc%tis_lstack_Kr(nstack) = gromol%tislstacks(k)%Kr
+          enefunc%tis_lstack_phi10(nstack) = gromol%tislstacks(k)%phi10 * RAD
+          enefunc%tis_lstack_Kphi1(nstack) = gromol%tislstacks(k)%Kphi1
+          enefunc%tis_lstack_phi20(nstack) = gromol%tislstacks(k)%phi20 * RAD
+          enefunc%tis_lstack_Kphi2(nstack) = gromol%tislstacks(k)%Kphi2
+        end do
+      end do
+    end do
+
+    enefunc%num_tis_lstack = nstack
+
+    call get_loop_index(enefunc%num_tis_lstack, istart, iend)
+    enefunc%istart_tis_lstack = istart
+    enefunc%iend_tis_lstack   = iend
+
+    if (nstack > 0) then
+      enefunc%tis_lstack_calc = .true.
+    endif
+
+    return
+
+  end subroutine setup_enefunc_tis_lstack
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !

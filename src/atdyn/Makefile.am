@@ -43,6 +43,7 @@ atdyn_SOURCES = \
 	at_energy_angles.fpp \
 	at_energy_dihedrals.fpp \
 	at_energy_cg_nonlocal.fpp \
+	at_energy_tis.fpp \
 	at_energy_table_cubic.fpp \
 	at_energy_table_linear.fpp \
 	at_energy_table_linear_bondcorr.fpp \

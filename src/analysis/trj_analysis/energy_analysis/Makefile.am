@@ -38,7 +38,7 @@ optional_base = at_input.o at_boundary.o at_boundary_str.o \
 	at_dynvars.o at_dynvars_str.o at_restraints.o \
 	at_restraints_str.o at_remd.o at_remd_str.o \
 	at_energy.o at_energy_angles.o at_energy_bonds.o \
-	at_energy_dihedrals.o at_energy_go.o at_energy_nonbonds.o \
+	at_energy_dihedrals.o at_energy_go.o at_energy_tis.o at_energy_nonbonds.o \
 	at_energy_pme.o at_energy_eef1.o at_energy_gbsa.o at_energy_restraints.o \
 	at_energy_morph.o at_energy_soft.o at_energy_cg_nonlocal.o \
 	at_energy_str.o at_energy_table_cubic.o \

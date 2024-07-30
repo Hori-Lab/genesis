@@ -690,7 +690,16 @@ contains
         ifm = ifm+1
       end if
     end if
-    
+
+    ! TIS
+    if (enefunc%forcefield == ForcefieldRESIDCG) then
+      if (enefunc%tis_lstack_calc) then
+        write(category(ifm),frmt) 'TIS_L_STACK'
+        values(ifm) = dynvars%energy%tis_lstack
+        ifm = ifm+1
+      end if
+    end if
+
     if (enefunc%forcefield == ForcefieldAAGO .or. &
         enefunc%forcefield == ForcefieldCAGO .or. &
         enefunc%forcefield == ForcefieldKBGO) then

@@ -38,7 +38,7 @@ at_enefunc_str.o: at_enefunc_str.fpp
 at_enefunc_str_mod.mod: at_enefunc_str.fpp at_enefunc_str.o
 at_enefunc_table.o: at_enefunc_table.fpp at_energy_mod.mod at_energy_str_mod.mod at_enefunc_str_mod.mod 
 at_enefunc_table_mod.mod: at_enefunc_table.fpp at_enefunc_table.o
-at_energy.o: at_energy.fpp at_energy_gamd_mod.mod at_enefunc_str_mod.mod at_boundary_mod.mod at_constraints_mod.mod at_boundary_str_mod.mod at_pairlist_str_mod.mod at_energy_go_mod.mod at_energy_nonbonds_mod.mod at_energy_gbsa_mod.mod at_energy_morph_mod.mod at_energy_pme_mod.mod at_energy_str_mod.mod at_energy_angles_mod.mod at_energy_soft_mod.mod at_energy_dihedrals_mod.mod at_restraints_str_mod.mod at_energy_bonds_mod.mod at_energy_cg_nonlocal_mod.mod at_energy_eef1_mod.mod at_energy_restraints_mod.mod at_constraints_str_mod.mod at_qmmm_mod.mod 
+at_energy.o: at_energy.fpp at_energy_gamd_mod.mod at_enefunc_str_mod.mod at_boundary_mod.mod at_constraints_mod.mod at_boundary_str_mod.mod at_pairlist_str_mod.mod at_energy_go_mod.mod at_energy_tis_mod.mod at_energy_nonbonds_mod.mod at_energy_gbsa_mod.mod at_energy_morph_mod.mod at_energy_pme_mod.mod at_energy_str_mod.mod at_energy_angles_mod.mod at_energy_soft_mod.mod at_energy_dihedrals_mod.mod at_restraints_str_mod.mod at_energy_bonds_mod.mod at_energy_cg_nonlocal_mod.mod at_energy_eef1_mod.mod at_energy_restraints_mod.mod at_constraints_str_mod.mod at_qmmm_mod.mod
 at_energy_mod.mod: at_energy.fpp at_energy.o
 at_energy_angles.o: at_energy_angles.fpp at_enefunc_str_mod.mod at_boundary_str_mod.mod 
 at_energy_angles_mod.mod: at_energy_angles.fpp at_energy_angles.o
@@ -46,6 +46,8 @@ at_energy_bonds.o: at_energy_bonds.fpp at_enefunc_str_mod.mod at_boundary_str_mo
 at_energy_bonds_mod.mod: at_energy_bonds.fpp at_energy_bonds.o
 at_energy_cg_nonlocal.o: at_energy_cg_nonlocal.fpp at_enefunc_str_mod.mod at_boundary_str_mod.mod at_pairlist_str_mod.mod 
 at_energy_cg_nonlocal_mod.mod: at_energy_cg_nonlocal.fpp at_energy_cg_nonlocal.o
+at_energy_tis.o: at_energy_tis.fpp at_enefunc_str_mod.mod at_boundary_str_mod.mod at_pairlist_str_mod.mod
+at_energy_tis_mod.mod: at_energy_tis.fpp at_energy_tis.o
 at_energy_dihedrals.o: at_energy_dihedrals.fpp at_enefunc_str_mod.mod at_boundary_str_mod.mod 
 at_energy_dihedrals_mod.mod: at_energy_dihedrals.fpp at_energy_dihedrals.o
 at_energy_eef1.o: at_energy_eef1.fpp at_enefunc_str_mod.mod at_boundary_str_mod.mod at_pairlist_str_mod.mod 

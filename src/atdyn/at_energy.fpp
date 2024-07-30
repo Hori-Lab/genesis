@@ -25,6 +25,7 @@ module at_energy_mod
   use at_energy_restraints_mod
   use at_energy_nonbonds_mod
   use at_energy_cg_nonlocal_mod
+  use at_energy_tis_mod
   use at_energy_dihedrals_mod
   use at_energy_angles_mod
   use at_energy_bonds_mod
@@ -1928,6 +1929,52 @@ contains
     end select
 
     ! -----------------------------
+    ! CG RNA TIS model interactions
+    ! -----------------------------
+
+    select case(boundary%type)
+
+    case (BoundaryTypePBC)
+
+!      if (enefunc%forcefield == ForcefieldRESIDCG) then
+!
+!        if (enefunc%cg_DNA_base_pair_calc) then
+!          call compute_energy_DNA_base_pairing_pbc(enefunc, boundary, &
+!               pairlist, coord_pbc, force_omp, virial, energy%base_pairing)
+!        end if
+!
+!        if (enefunc%cg_DNA_exv_calc) then
+!          call compute_energy_DNA_exv_pbc(enefunc, boundary, &
+!               pairlist, coord_pbc, force_omp, virial, energy%cg_DNA_exv)
+!        end if
+!
+!      end if
+      call error_msg('Compute_Energy_Go> Bad boundary condition for RNA TIS model.')
+
+    case (BoundaryTypeNOBC)
+
+      if (enefunc%forcefield == ForcefieldRESIDCG) then
+
+        if (enefunc%tis_lstack_calc) then
+          call compute_energy_tis_lstack(enefunc, &
+               coord, force_omp, virial, energy%tis_lstack)
+        end if
+
+        !if (enefunc%tis_wca_calc) then
+        !  call compute_energy_tis_wca(enefunc, pairlist, coord, &
+        !      force_omp, virial, energy%tis_wca)
+        !end if
+
+      end if
+
+    case default
+
+      call error_msg('Compute_Energy_Go> Bad boundary condition for RNA TIS model.')
+
+    end select
+
+
+    ! -----------------------------
     ! CG DNA non-local interactions
     ! -----------------------------
     ! 
@@ -3688,6 +3735,12 @@ contains
         values(ifm) = energy%cmap
         ifm = ifm+1
       end if
+    end if
+
+    if (enefunc%num_tis_lstack > 0) then
+      write(category(ifm),frmt) 'TIS_L_STACK'
+      values(ifm) = energy%tis_lstack
+      ifm = ifm+1
     end if
 
     if (enefunc%forcefield == ForcefieldAAGO .or. &

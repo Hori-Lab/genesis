@@ -249,6 +249,27 @@ module fileio_grotop_mod
     integer                        :: grp_end    = 0
   end type s_idr_kh
 
+  ! TIS local stack
+  !
+  type, public :: s_tis_lstack
+    integer                        :: atom_idx1  = 0
+    integer                        :: atom_idx2  = 0
+    integer                        :: atom_idx3  = 0
+    integer                        :: atom_idx4  = 0
+    integer                        :: atom_idx5  = 0
+    integer                        :: atom_idx6  = 0
+    integer                        :: atom_idx7  = 0
+    real(wp)                       :: h          = 0.0_wp
+    real(wp)                       :: s          = 0.0_wp
+    real(wp)                       :: Tm         = 0.0_wp
+    real(wp)                       :: Kr         = 0.0_wp
+    real(wp)                       :: Kphi1      = 0.0_wp
+    real(wp)                       :: Kphi2      = 0.0_wp
+    real(wp)                       :: r0         = 0.0_wp
+    real(wp)                       :: phi10      = 0.0_wp
+    real(wp)                       :: phi20      = 0.0_wp
+  end type s_tis_lstack
+
   ! molecule definition data
   type, public :: s_grotop_mol
     integer                        :: num_atoms     = 0
@@ -270,7 +291,8 @@ module fileio_grotop_mod
     integer                        :: num_pwmcos    = 0
     integer                        :: num_pwmcosns  = 0
     integer                        :: num_idr_hps   = 0
-    integer                        :: num_idr_kh   = 0
+    integer                        :: num_idr_kh    = 0
+    integer                        :: num_tis_lstack= 0
     type(s_atom),      allocatable :: atoms(:)
     type(s_bond),      allocatable :: bonds(:)
     type(s_angl),      allocatable :: angls(:)
@@ -292,6 +314,7 @@ module fileio_grotop_mod
     type(s_pwmcosns),  allocatable :: pwmcosns(:)
     type(s_idr_hps),   allocatable :: idr_hps(:)
     type(s_idr_kh),    allocatable :: idr_kh(:)
+    type(s_tis_lstack),allocatable :: tislstacks(:)
   end type s_grotop_mol
 
 
@@ -637,6 +660,7 @@ module fileio_grotop_mod
   integer,      public, parameter :: GMGroMolPWMcosns = 118
   integer,      public, parameter :: GMGroMolIDRHPS   = 119
   integer,      public, parameter :: GMGroMolIDRKH    = 120
+  integer,      public, parameter :: GMGroMolTISLStack= 121
 
   ! parameters for TOP structure allocatable variables
   integer,      public, parameter :: GroTopAtomType      = 1
@@ -718,6 +742,8 @@ module fileio_grotop_mod
   integer,     private, parameter :: DCGIDRKHRegion        = 47
   integer,     private, parameter :: DCGPairMJEpsilon      = 48
   integer,     private, parameter :: DCGKHMolPairs         = 49
+  !    TIS
+  integer,     private, parameter :: DTISLocalStack        = 50
 
   ! parameters
   logical,     private, parameter :: VerboseOn        = .false.
@@ -789,6 +815,7 @@ module fileio_grotop_mod
   private :: read_pwmcosns
   private :: read_idr_hps
   private :: read_idr_kh
+  private :: read_tis_lstack
 
   private :: write_grotop
   private :: write_defaults
@@ -1072,6 +1099,7 @@ contains
     gromol%num_pwmcosns  = 0
     gromol%num_idr_hps   = 0
     gromol%num_idr_kh    = 0
+    gromol%num_tis_lstack= 0
 
     return
 
@@ -1848,6 +1876,7 @@ contains
     type(s_pwmcosns),        allocatable   :: pwmcosns(:)
     type(s_idr_hps),         allocatable   :: idr_hps(:)
     type(s_idr_kh),          allocatable   :: idr_kh(:)
+    type(s_tis_lstack),      allocatable   :: tislstacks(:)
 
     select case(variable)
 
@@ -2439,6 +2468,35 @@ contains
             call error_msg_alloc
       end if
 
+    case(GMGroMolTISLStack)
+      if (allocated(gromol%tislstacks)) then
+
+        old_size = size(gromol%tislstacks)
+        if (old_size == var_size) &
+            return
+        allocate(tislstacks(old_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        tislstacks(:) = gromol%tislstacks(:)
+        deallocate(gromol%tislstacks, stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_dealloc
+        allocate(gromol%tislstacks(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        if (old_size > var_size) then
+          gromol%tislstacks(1:var_size) = tislstacks(1:var_size)
+        else
+          gromol%tislstacks(1:old_size) = tislstacks(1:old_size)
+        end if
+        deallocate(tislstacks, stat = alloc_stat)
+      else
+        old_size = 0
+        allocate(gromol%tislstacks(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+      end if
+
     case default
 
       call error_msg('Realloc_Grotop_Mol> bad variable')
@@ -2943,6 +3001,9 @@ contains
       case (DEzMembrane)
         call read_membrane_type(file, grotop)
 
+      case (DTISLocalStack)
+        call read_tis_lstack(file, grotop, gromol)
+
       case (DUnknown)
         if (main_rank) &
           write(MsgOut,*) 'Read_Grotop> INFO. Unknown directive:'// &
@@ -3050,6 +3111,8 @@ contains
                'num_IDR_HPS = ', grotop%moltypes(i)%mol%num_idr_hps
           write(MsgOut,'(6X,A14,I10)') &
                'num_IDR_KH  = ', grotop%moltypes(i)%mol%num_idr_kh
+          write(MsgOut,'(6X,A14,I10)') &
+               'num_TIS_lst = ', grotop%moltypes(i)%mol%num_tis_lstack
         else
           omit = .true.
         end if
@@ -7503,6 +7566,94 @@ contains
   end subroutine read_idr_kh
 
 
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    read_tis_lstack
+  !> @brief        read section [ tis_local_stack ]
+  !! @authors      NH
+  !! @param[in]    file   : file unit number
+  !! @param[inout] grotop : GROMACS TOP information
+  !! @param[inout] gromol : GROMACS ITP information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine read_tis_lstack(file, grotop, gromol)
+
+    ! formal arguments
+    integer,                 intent(in)    :: file
+    type(s_grotop),  target, intent(inout) :: grotop
+    type(s_grotop_mol),      pointer       :: gromol
+
+    ! local variables
+    integer                  :: i, cnt, old_cnt
+    character(MaxLine)       :: line
+    character(100)           :: error
+    character(3)             :: chr_tmp
+
+    type(s_tis_lstack),    pointer :: stack
+
+    print *, 'start read_tis_lstack'
+    flush(6)
+    ! check count
+    cnt = check_section_count(file)
+
+    ! allocate memory
+    old_cnt = size_grotop_mol(gromol, GMGroMolTISLStack)
+    call realloc_grotop_mol(gromol, GMGroMolTISLStack, old_cnt+cnt)
+
+    if (VerboseOn .and. main_rank) then
+      write(MsgOut,'(" Read_Gromol> [ tis_local_stack ] :"'// &
+           ',i5," (total:",i5,")")') cnt, old_cnt+cnt
+    end if
+
+    ! read data
+    !
+    do i = 1, cnt
+
+      stack => gromol%tislstacks(old_cnt+i)
+
+      if (.not. gro_pp_next_line(file, line, error)) &
+        goto 900
+
+      if (match_format(line, 'NNNNNNNNNNNN')) then
+
+        read(line,*)          &
+             stack%atom_idx1, &
+             stack%atom_idx2, &
+             stack%atom_idx3, &
+             stack%atom_idx4, &
+             stack%atom_idx5, &
+             stack%atom_idx6, &
+             stack%atom_idx7, &
+             stack%h,         &
+             stack%s,         &
+             stack%Tm,        &
+             stack%r0,        &
+             stack%Kr,        &
+             stack%phi10,     &
+             stack%Kphi1,     &
+             stack%phi20,     &
+             stack%Kphi2
+
+      else
+
+        goto 900
+
+      end if
+
+    end do
+
+    gromol%num_tis_lstack = size_grotop_mol(gromol, GMGroMolTISLStack)
+
+    print *, 'end read_tis_lstack'
+    flush(6)
+    return
+
+900 call error_msg_grotop(file, 'Read_Grotop> read error. [ tis_local_stack ]')
+
+  end subroutine read_tis_lstack
+
+
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !
@@ -10648,6 +10799,8 @@ contains
       directive = DMorphSC
     case ('ez_membrane')
       directive = DEzMembrane
+    case ('tis_local_stack')
+      directive = DTISLocalStack
     case default
       directive = DUnknown
     end select
@@ -10943,6 +11096,13 @@ contains
     case(GMGroMolIDRKH)
       if (allocated(gromol%idr_kh)) then
         size_grotop_mol = size(gromol%idr_kh)
+      else
+        size_grotop_mol = 0
+      end if
+
+    case(GMGroMolTISLStack)
+      if (allocated(gromol%tislstacks)) then
+        size_grotop_mol = size(gromol%tislstacks)
       else
         size_grotop_mol = 0
       end if
