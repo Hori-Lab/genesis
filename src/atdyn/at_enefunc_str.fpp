@@ -630,7 +630,6 @@ module at_enefunc_str_mod
     real(wp),         allocatable :: nb14_qq_scale(:,:)
     real(wp),         allocatable :: nb14_lj_scale(:,:)
     real(wp),         allocatable :: work(:,:)
-    real(wp),         allocatable :: work_tis_stack(:,:,:) ! not using work as there are 3x7 = 21 elements needed.
 
     real(wp)                      :: nb14_qq_scale_c19
 

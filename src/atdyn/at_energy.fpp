@@ -1932,33 +1932,32 @@ contains
     ! CG RNA TIS model interactions
     ! -----------------------------
 
+    ! TIS Local Stack
+    if (enefunc%tis_lstack_calc) then
+      if (boundary%type == BoundaryTypePBC .and. boundary%calc_local_pbc) then
+        call compute_energy_tis_lstack_pbc(enefunc, boundary, &
+             coord_pbc, force_omp, virial, energy%tis_lstack)
+      else
+        call compute_energy_tis_lstack(enefunc, &
+             coord, force_omp, virial, energy%tis_lstack)
+      end if
+    end if
+
     select case(boundary%type)
 
     case (BoundaryTypePBC)
 
-!      if (enefunc%forcefield == ForcefieldRESIDCG) then
-!
-!        if (enefunc%cg_DNA_base_pair_calc) then
-!          call compute_energy_DNA_base_pairing_pbc(enefunc, boundary, &
-!               pairlist, coord_pbc, force_omp, virial, energy%base_pairing)
-!        end if
-!
-!        if (enefunc%cg_DNA_exv_calc) then
-!          call compute_energy_DNA_exv_pbc(enefunc, boundary, &
-!               pairlist, coord_pbc, force_omp, virial, energy%cg_DNA_exv)
-!        end if
-!
-!      end if
-      call error_msg('Compute_Energy_Go> Bad boundary condition for RNA TIS model.')
+      if (enefunc%forcefield == ForcefieldRESIDCG) then
+
+        continue
+
+      end if
 
     case (BoundaryTypeNOBC)
 
       if (enefunc%forcefield == ForcefieldRESIDCG) then
 
-        if (enefunc%tis_lstack_calc) then
-          call compute_energy_tis_lstack(enefunc, &
-               coord, force_omp, virial, energy%tis_lstack)
-        end if
+        continue
 
         !if (enefunc%tis_wca_calc) then
         !  call compute_energy_tis_wca(enefunc, pairlist, coord, &

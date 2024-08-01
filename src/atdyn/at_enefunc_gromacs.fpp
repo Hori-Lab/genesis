@@ -282,11 +282,6 @@ contains
     allocate(enefunc%work(MAXWRK,nwork), stat=alloc_stat)
     if (alloc_stat /= 0) call error_msg_alloc
 
-    if (enefunc%tis_lstack_calc) then
-      allocate(enefunc%work_tis_stack(3, 7, enefunc%num_tis_lstack), stat=alloc_stat)
-      if (alloc_stat /= 0) call error_msg_alloc
-    endif
-
     ! write summary of energy function
     !
     if (main_rank) then
