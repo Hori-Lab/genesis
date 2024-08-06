@@ -318,6 +318,7 @@ contains
                   enefunc%cg_pairlistdist_PWMcos,                  &
                   enefunc%cg_pairlistdist_DNAbp,                   &
                   enefunc%cg_pairlistdist_exv,                     &
+                  enefunc%tis_pairlistdist_mwca,                   &
                   boundary)
             else
               call update_boundary(enefunc%table%table,               &
@@ -341,6 +342,7 @@ contains
                     enefunc%cg_pairlistdist_PWMcos,                  &
                     enefunc%cg_pairlistdist_DNAbp,                   &
                     enefunc%cg_pairlistdist_exv,                     &
+                    enefunc%tis_pairlistdist_mwca,                   &
                     boundary)
               else
                 call update_boundary(enefunc%table%table,               &

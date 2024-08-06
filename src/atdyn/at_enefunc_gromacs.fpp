@@ -187,6 +187,10 @@ contains
       !
       call setup_enefunc_cg_exv(ene_info, grotop, molecule, enefunc)
 
+      ! CG : TIS mwca
+      !
+      call setup_enefunc_tis_mwca(ene_info, grotop, molecule, enefunc)
+
       ! CG : construct nonlocal excusion list
       !
       call setup_enefunc_cg_nonlocal_exclusion(ene_info, grotop, molecule, enefunc)
@@ -1144,6 +1148,7 @@ contains
     enefunc%cg_pairlistdist_PWMcos = ene_info%cg_pairlistdist_PWMcos
     enefunc%cg_pairlistdist_DNAbp  = ene_info%cg_pairlistdist_DNAbp
     enefunc%cg_pairlistdist_exv    = ene_info%cg_pairlistdist_exv
+    enefunc%tis_pairlistdist_mwca  = ene_info%tis_pairlistdist_mwca
     enefunc%cg_ele_sol_T           = ene_info%cg_sol_temperature
     enefunc%cg_ele_sol_IC          = ene_info%cg_sol_ionic_strength
 
@@ -1186,6 +1191,18 @@ contains
         atom_cls_2_base_type(i) = NABaseTypeRP
       else if (grotop%atomtypes(i)%type_name .eq. 'RS') then
         atom_cls_2_base_type(i) = NABaseTypeRS
+      else if (grotop%atomtypes(i)%type_name .eq. 'TRP') then
+        atom_cls_2_base_type(i) = NABaseTypeTRP
+      else if (grotop%atomtypes(i)%type_name .eq. 'TRS') then
+        atom_cls_2_base_type(i) = NABaseTypeTRS
+      else if (grotop%atomtypes(i)%type_name .eq. 'TRA') then
+        atom_cls_2_base_type(i) = NABaseTypeTRBA
+      else if (grotop%atomtypes(i)%type_name .eq. 'TRC') then
+        atom_cls_2_base_type(i) = NABaseTypeTRBC
+      else if (grotop%atomtypes(i)%type_name .eq. 'TRG') then
+        atom_cls_2_base_type(i) = NABaseTypeTRBG
+      else if (grotop%atomtypes(i)%type_name .eq. 'TRU') then
+        atom_cls_2_base_type(i) = NABaseTypeTRBU
       else
         atom_cls_2_base_type(i) = NABaseTypeProtein
       end if
@@ -3680,6 +3697,39 @@ contains
     return
 
   end subroutine setup_enefunc_tis_lstack
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    setup_enefunc_tis_mwca
+  !> @brief        define mwca term for TIS model
+  !! @authors      NH
+  !! @param[in]    ene_info : ENERGY section control parameters information
+  !! @param[in]    grotop   : GROMACS parameter topology information
+  !! @param[in]    molecule : molecule information
+  !! @param[inout] enefunc  : potential energy functions information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine setup_enefunc_tis_mwca(ene_info, grotop, molecule, enefunc)
+
+    ! formal arguments
+    type(s_ene_info),        intent(in)    :: ene_info
+    type(s_grotop),          intent(in)    :: grotop
+    type(s_molecule),        intent(in)    :: molecule
+    type(s_enefunc),         intent(inout) :: enefunc
+
+    if (grotop%num_tismwcamolpairs > 0) then
+      enefunc%tis_mwca_calc = .true.
+
+      ! ----------------
+      ! Model Parameters
+      ! ----------------
+      enefunc%tis_mwca_a = 1.6_wp
+    end if
+
+    return
+
+  end subroutine setup_enefunc_tis_mwca
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !

@@ -1200,12 +1200,13 @@ contains
   !! @param[in]    pairlistdist_PWMcos : cg PWMcos pairlist distance
   !! @param[in]    pairlistdist_DNAbp  : cg DNA basepairing pairlist distance
   !! @param[in]    pairlistdist_exv    : cg excluded volume pairlist distance
+  !! @param[in]    pairlistdist_mwca   : TIS excluded volume pairlist distance
   !! @param[inout] boundary            : information of boundary condition
   !
   !======1=========2=========3=========4=========5=========6=========7=========8
 
   subroutine update_boundary_cg(pairlistdist_ele, pairlistdist_126, &
-      pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, boundary)
+      pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, pairlistdist_mwca, boundary)
 
     ! formal arguments
     real(wp),         intent(in)    :: pairlistdist_ele
@@ -1213,6 +1214,7 @@ contains
     real(wp),         intent(in)    :: pairlistdist_PWMcos
     real(wp),         intent(in)    :: pairlistdist_DNAbp
     real(wp),         intent(in)    :: pairlistdist_exv
+    real(wp),         intent(in)    :: pairlistdist_mwca
     type(s_boundary), intent(inout) :: boundary
 
 
@@ -1225,7 +1227,7 @@ contains
     case (BoundaryTypePBC)
 
       call update_boundary_pbc_cg(pairlistdist_ele, pairlistdist_126, &
-          pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, boundary)
+          pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, pairlistdist_mwca, boundary)
 
     end select
 
@@ -1243,12 +1245,13 @@ contains
   !! @param[in]    pairlistdist_PWMcos : cg PWMcos pairlist distance
   !! @param[in]    pairlistdist_DNAbp  : cg DNA basepairing pairlist distance
   !! @param[in]    pairlistdist_exv    : cg excluded volume pairlist distance
+  !! @param[in]    pairlistdist_mwca   : TIS excluded volume pairlist distance
   !! @param[inout] boundary            : information of boundary condition
   !
   !======1=========2=========3=========4=========5=========6=========7=========8
 
   subroutine update_boundary_pbc_cg(pairlistdist_ele, pairlistdist_126, &
-      pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, boundary)
+      pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, pairlistdist_mwca, boundary)
 
     ! formal arguments
     real(wp),         intent(in)    :: pairlistdist_ele
@@ -1256,6 +1259,7 @@ contains
     real(wp),         intent(in)    :: pairlistdist_PWMcos
     real(wp),         intent(in)    :: pairlistdist_DNAbp
     real(wp),         intent(in)    :: pairlistdist_exv
+    real(wp),         intent(in)    :: pairlistdist_mwca
     type(s_boundary), intent(inout) :: boundary
 
     ! local variables
@@ -1263,7 +1267,7 @@ contains
     real(wp)                        :: csize_x, csize_y, csize_z
     integer                         :: i, j, k
     integer                         :: inb, jnb, knb, inbs, jnbs, knbs, lc, lcnb
-    integer                         :: l_ele, l_126, l_PWMcos, l_DNAbp, l_exv
+    integer                         :: l_ele, l_126, l_PWMcos, l_DNAbp, l_exv, l_mwca
     integer                         :: ncell_x, ncell_y, ncell_z, ncell
     integer                         :: ncell_x_check, ncell_y_check, ncell_z_check
 
@@ -1271,7 +1275,7 @@ contains
     real(wp)                        :: pairlistdist_short, pairlistdist_long
     real(wp)                        :: pairdist_ele_sqr, pairdist_126_sqr
     real(wp)                        :: pairdist_PWMcos_sqr, pairdist_DNAbp_sqr
-    real(wp)                        :: pairdist_exv_sqr
+    real(wp)                        :: pairdist_exv_sqr, pairdist_mwca_sqr
     real(wp)                        :: pairdist_check
     real(wp)                        :: ci, cj, ck
     integer                         :: cellpair_max_x, cellpair_max_y, cellpair_max_z
@@ -1288,10 +1292,10 @@ contains
     ! -----------------------------------------------
     ! 
     pairlistdist_long  = max(pairlistdist_ele, pairlistdist_126, &
-        pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv)
+        pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, pairlistdist_mwca)
     ! 
     pairlistdist_short = min(pairlistdist_ele, pairlistdist_126, &
-        pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv)
+        pairlistdist_PWMcos, pairlistdist_DNAbp, pairlistdist_exv, pairlistdist_mwca)
 
     ! -------------------------------
     ! check box size and cell numbers
@@ -1354,6 +1358,7 @@ contains
     pairdist_PWMcos_sqr = pairlistdist_PWMcos * pairlistdist_PWMcos
     pairdist_DNAbp_sqr  = pairlistdist_DNAbp  * pairlistdist_DNAbp
     pairdist_exv_sqr    = pairlistdist_exv    * pairlistdist_exv
+    pairdist_mwca_sqr   = pairlistdist_mwca   * pairlistdist_mwca
 
     cellpair_max_x = int(pairlistdist_long / csize_x) + 1
     cellpair_max_y = int(pairlistdist_long / csize_y) + 1
@@ -1363,6 +1368,7 @@ contains
     boundary%num_neighbor_cells_CG_PWMcos = 0
     boundary%num_neighbor_cells_CG_DNAbp  = 0
     boundary%num_neighbor_cells_CG_exv    = 0
+    boundary%num_neighbor_cells_CG_mwca   = 0
 
     do k = -cellpair_max_z, cellpair_max_z
 
@@ -1394,6 +1400,9 @@ contains
           if ((ci + cj + ck) < pairdist_exv_sqr) then
             boundary%num_neighbor_cells_CG_exv = boundary%num_neighbor_cells_CG_exv + 1
           end if
+          if ((ci + cj + ck) < pairdist_mwca_sqr) then
+            boundary%num_neighbor_cells_CG_mwca = boundary%num_neighbor_cells_CG_mwca + 1
+          end if
 
         end do
       end do
@@ -1404,6 +1413,7 @@ contains
     call alloc_boundary(boundary, BoundaryCellsCGPWMcos, ncell)
     call alloc_boundary(boundary, BoundaryCellsCGDNAbp,  ncell)
     call alloc_boundary(boundary, BoundaryCellsCGexv,    ncell)
+    call alloc_boundary(boundary, BoundaryCellsCGmwca,   ncell)
 
     ! ------------------------------------------------
     ! count "common" neighbor cells for each potential
@@ -1414,6 +1424,7 @@ contains
     l_PWMcos = 0
     l_DNAbp  = 0
     l_exv    = 0
+    l_mwca   = 0
     ! 
     do k = -cellpair_max_z, cellpair_max_z
 
@@ -1463,6 +1474,13 @@ contains
             boundary%neighbor_cell_common_x_exv(l_exv) = i
             boundary%neighbor_cell_common_y_exv(l_exv) = j
             boundary%neighbor_cell_common_z_exv(l_exv) = k
+          end if
+
+          if ((ci + cj + ck) < pairdist_mwca_sqr) then
+            l_mwca = l_mwca + 1
+            boundary%neighbor_cell_common_x_mwca(l_mwca) = i
+            boundary%neighbor_cell_common_y_mwca(l_mwca) = j
+            boundary%neighbor_cell_common_z_mwca(l_mwca) = k
           end if
 
         end do                  ! i
@@ -1670,6 +1688,44 @@ contains
             boundary%neighbor_cells_CG_exv(l_exv,lc) = lcnb
 
           end do                ! l_exv
+
+          ! ---
+          ! mwca
+          ! ---
+          !
+          do l_mwca = 1, boundary%num_neighbor_cells_CG_mwca
+
+            inb = i + boundary%neighbor_cell_common_x_mwca(l_mwca)
+            if (inb < 0) then
+              inbs = ncell_x + inb
+            else if (inb >= ncell_x) then
+              inbs = inb - ncell_x
+            else
+              inbs = inb
+            end if
+
+            jnb = j + boundary%neighbor_cell_common_y_mwca(l_mwca)
+            if (jnb < 0) then
+              jnbs = ncell_y + jnb
+            else if (jnb >= ncell_y) then
+              jnbs = jnb - ncell_y
+            else
+              jnbs = jnb
+            end if
+
+            knb = k + boundary%neighbor_cell_common_z_mwca(l_mwca)
+            if (knb < 0) then
+              knbs = ncell_z + knb
+            else if (knb >= ncell_z) then
+              knbs = knb - ncell_z
+            else
+              knbs = knb
+            end if
+
+            lcnb = 1 + inbs + jnbs*ncell_x + knbs*ncell_x*ncell_y
+            boundary%neighbor_cells_CG_mwca(l_mwca,lc) = lcnb
+
+          end do                ! l_mwca
 
         end do                  ! i
       end do                    ! j

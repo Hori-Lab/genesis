@@ -76,11 +76,13 @@ module at_boundary_str_mod
     integer                       :: num_neighbor_cells_CG_PWMcos
     integer                       :: num_neighbor_cells_CG_DNAbp
     integer                       :: num_neighbor_cells_CG_exv
+    integer                       :: num_neighbor_cells_CG_mwca
     integer, allocatable          :: neighbor_cells_CG_ele(:,:)
     integer, allocatable          :: neighbor_cells_CG_126(:,:)
     integer, allocatable          :: neighbor_cells_CG_PWMcos(:,:)
     integer, allocatable          :: neighbor_cells_CG_DNAbp(:,:)
     integer, allocatable          :: neighbor_cells_CG_exv(:,:)
+    integer, allocatable          :: neighbor_cells_CG_mwca(:,:)
     integer, allocatable          :: neighbor_cell_common_x_ele(:)
     integer, allocatable          :: neighbor_cell_common_y_ele(:)
     integer, allocatable          :: neighbor_cell_common_z_ele(:)
@@ -96,6 +98,9 @@ module at_boundary_str_mod
     integer, allocatable          :: neighbor_cell_common_x_exv(:)
     integer, allocatable          :: neighbor_cell_common_y_exv(:)
     integer, allocatable          :: neighbor_cell_common_z_exv(:)
+    integer, allocatable          :: neighbor_cell_common_x_mwca(:)
+    integer, allocatable          :: neighbor_cell_common_y_mwca(:)
+    integer, allocatable          :: neighbor_cell_common_z_mwca(:)
     logical                       :: calc_local_pbc
 
   end type s_boundary
@@ -108,6 +113,7 @@ module at_boundary_str_mod
   integer,      public, parameter :: BoundaryCellsCGPWMcos = 5
   integer,      public, parameter :: BoundaryCellsCGDNAbp  = 6
   integer,      public, parameter :: BoundaryCellsCGexv    = 7
+  integer,      public, parameter :: BoundaryCellsCGmwca   = 8
 
   ! parameters
   integer,      public, parameter :: BoundaryTypeNOBC     = 1
@@ -486,6 +492,53 @@ contains
       boundary%neighbor_cell_common_x_exv(1:boundary%num_neighbor_cells_CG_exv)        = 0
       boundary%neighbor_cell_common_y_exv(1:boundary%num_neighbor_cells_CG_exv)        = 0
       boundary%neighbor_cell_common_z_exv(1:boundary%num_neighbor_cells_CG_exv)        = 0
+
+    case(BoundaryCellsCGmwca)
+
+      ! ======
+      ! TIS EXV modified Weeks-Chandler-Andersen (mwca) potential
+      ! ======
+      !
+      if (allocated(boundary%neighbor_cell_common_x_mwca)) then
+
+        if (size(boundary%neighbor_cell_common_x_mwca) <   &
+            boundary%num_neighbor_cells_CG_mwca ) then
+          deallocate(boundary%neighbor_cells_CG_mwca,  &
+                     boundary%neighbor_cell_common_x_mwca, &
+                     boundary%neighbor_cell_common_y_mwca, &
+                     boundary%neighbor_cell_common_z_mwca, &
+                     stat = dealloc_stat)
+        end if
+      end if
+
+      if (allocated(boundary%neighbor_cells_CG_mwca)) then
+
+        if (size(boundary%neighbor_cells_CG_mwca(1,:)) < var_size) then
+          deallocate(boundary%neighbor_cells_CG_mwca,  &
+                     stat = dealloc_stat)
+          if (dealloc_stat /= 0) call error_msg_dealloc
+        end if
+      end if
+
+      if (.not. allocated(boundary%neighbor_cells_CG_mwca)) then
+
+        allocate(boundary%neighbor_cells_CG_mwca(boundary%num_neighbor_cells_CG_mwca,var_size),&
+                 stat = alloc_stat)
+        if (alloc_stat /= 0)   call error_msg_alloc
+      end if
+
+      if (.not. allocated(boundary%neighbor_cell_common_x_mwca)) then
+
+        allocate(boundary%neighbor_cell_common_x_mwca(boundary%num_neighbor_cells_CG_mwca), &
+                 boundary%neighbor_cell_common_y_mwca(boundary%num_neighbor_cells_CG_mwca), &
+                 boundary%neighbor_cell_common_z_mwca(boundary%num_neighbor_cells_CG_mwca), &
+                 stat = alloc_stat)
+      end if
+
+      boundary%neighbor_cells_CG_mwca(1: boundary%num_neighbor_cells_CG_mwca,1:var_size) = 0
+      boundary%neighbor_cell_common_x_mwca(1:boundary%num_neighbor_cells_CG_mwca)        = 0
+      boundary%neighbor_cell_common_y_mwca(1:boundary%num_neighbor_cells_CG_mwca)        = 0
+      boundary%neighbor_cell_common_z_mwca(1:boundary%num_neighbor_cells_CG_mwca)        = 0
 
     case (BoundarySphericalPot)
 

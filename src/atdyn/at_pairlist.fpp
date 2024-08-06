@@ -58,6 +58,7 @@ module at_pairlist_mod
   private :: update_pairlist_solute_water
   private :: update_pairlist_water_water
   private :: check_pairlist_memory_size
+  !private :: update_pairlist_pbc_tis_mwca
 
 contains
 
@@ -105,6 +106,7 @@ contains
     if (.not. real_calc) &
       return
 
+
     ! initialize pairlist
     !
     call init_pairlist(pairlist)
@@ -116,6 +118,7 @@ contains
     pairlist%cg_pairlistdist_PWMcos = enefunc%cg_pairlistdist_PWMcos
     pairlist%cg_pairlistdist_DNAbp  = enefunc%cg_pairlistdist_DNAbp
     pairlist%cg_pairlistdist_exv    = enefunc%cg_pairlistdist_exv
+    pairlist%tis_pairlistdist_mwca  = enefunc%tis_pairlistdist_mwca
 
     ! allocate pairlist
     !
@@ -240,6 +243,7 @@ contains
       pairlist%allocate_pbc_cg_IDR_HPS  = .true.
       pairlist%allocate_pbc_cg_IDR_KH   = .true.
       pairlist%allocate_pbc_cg_KH       = .true.
+      pairlist%allocate_pbc_tis_mwca    = .true.
     end if
 
     select case (boundary%type)
@@ -311,6 +315,9 @@ contains
         if (enefunc%cg_KH_calc) then
           call update_pairlist_pbc_cg_KH       (enefunc, boundary, coord_pbc, pairlist)
         end if
+        !if (enefunc%tis_mwca_calc) then
+        !  call update_pairlist_pbc_tis_mwca    (enefunc, boundary, coord_pbc, pairlist)
+        !endif
       else
         call update_pairlist_solute_solute(enefunc, boundary, coord, pairlist)
         call update_pairlist_solute_water (enefunc, boundary, coord, pairlist)
@@ -710,6 +717,7 @@ contains
     real(wp)                 :: pairdist2_DNAbp
     real(wp)                 :: pairdist2_exv
     real(wp)                 :: pairdist2_longest
+    real(wp)                 :: pairdist2_mwca
     real(wp)                 :: pairdist_longest
     real(wp)                 :: dij(1:3), rij2
     integer                  :: i, j, k, natom, n, nloops
@@ -720,6 +728,7 @@ contains
     integer                  :: num_ele_max
     integer                  :: num_exv_max
     integer                  :: num_kh_max
+    integer                  :: num_mwca_max
     integer                  :: i_base_type, j_base_type
     integer                  :: i_chain_id, j_chain_id
     integer                  :: id, my_id, nthread
@@ -732,18 +741,21 @@ contains
     logical                  :: i_is_idr, j_is_idr
     logical                  :: i_is_DNA, j_is_DNA
     logical                  :: i_is_RNA, j_is_RNA
+    logical                  :: i_is_TIS, j_is_TIS
     logical                  :: ij_is_KH_pair
     logical                  :: need_reallocate_1
     logical                  :: need_reallocate_2
     logical                  :: need_reallocate_3
     logical                  :: need_reallocate_4
     logical                  :: need_reallocate_5
+    logical                  :: need_reallocate_6
 
     integer,     pointer     :: num_DNA_bp_pre(:), num_DNA_bp(:)
     integer,     pointer     :: num_DNA_exv_pre(:), num_DNA_exv(:)
     integer,     pointer     :: num_ele_pre(:), num_ele(:)
     integer,     pointer     :: num_exv_pre(:), num_exv(:)
     integer,     pointer     :: num_kh_pre(:),  num_kh(:)
+    integer,     pointer     :: num_mwca_pre(:), num_mwca(:)
 
 
     num_DNA_bp_pre  => pairlist%num_cg_DNA_basepair_pre
@@ -756,18 +768,22 @@ contains
     num_exv         => pairlist%num_cg_exv
     num_kh_pre      => pairlist%num_cg_kh_pre
     num_kh          => pairlist%num_cg_kh
+    num_mwca_pre    => pairlist%num_tis_mwca_pre
+    num_mwca        => pairlist%num_tis_mwca
 
     pairdist2_ele    = pairlist%cg_pairlistdist_ele    * pairlist%cg_pairlistdist_ele
     pairdist2_126    = pairlist%cg_pairlistdist_126    * pairlist%cg_pairlistdist_126
     pairdist2_PWMcos = pairlist%cg_pairlistdist_PWMcos * pairlist%cg_pairlistdist_PWMcos
     pairdist2_DNAbp  = pairlist%cg_pairlistdist_DNAbp  * pairlist%cg_pairlistdist_DNAbp
     pairdist2_exv    = pairlist%cg_pairlistdist_exv    * pairlist%cg_pairlistdist_exv
+    pairdist2_mwca   = pairlist%tis_pairlistdist_mwca  * pairlist%tis_pairlistdist_mwca
 
     pairdist_longest = max(pairlist%cg_pairlistdist_ele,    &
                            pairlist%cg_pairlistdist_126,    &
                            pairlist%cg_pairlistdist_PWMcos, &
                            pairlist%cg_pairlistdist_DNAbp,  &
-                           pairlist%cg_pairlistdist_exv)
+                           pairlist%cg_pairlistdist_exv,    &
+                           pairlist%tis_pairlistdist_mwca)
     pairdist2_longest = pairdist_longest * pairdist_longest
 
     natom                =  size(coord(1,:))
@@ -784,6 +800,7 @@ contains
     pairlist%num_cg_ele_calc          (1:natom,1:nthread) = 0
     pairlist%num_cg_exv_calc          (1:natom,1:nthread) = 0
     pairlist%num_cg_kh_calc           (1:natom,1:nthread) = 0
+    pairlist%num_tis_mwca_calc        (1:natom,1:nthread) = 0
 
     if (pairlist%allocate_nobc_cg) then
       nloops      = 2
@@ -802,6 +819,7 @@ contains
       num_ele(1:nthread)           = 0
       num_exv(1:nthread)           = 0
       num_kh(1:nthread)            = 0
+      num_mwca(1:nthread)          = 0
 
       if (.not. do_allocate) then
         num_DNA_bp_pre(1:nthread)  = 0
@@ -809,6 +827,7 @@ contains
         num_ele_pre(1:nthread)     = 0
         num_exv_pre(1:nthread)     = 0
         num_kh_pre(1:nthread)      = 0
+        num_mwca_pre(1:nthread)    = 0
       end if
 
       !$omp parallel                                     &
@@ -820,6 +839,7 @@ contains
       !$omp         i_is_idr, j_is_idr,                  &
       !$omp         i_is_DNA, j_is_DNA,                  &
       !$omp         i_is_RNA, j_is_RNA,                  &
+      !$omp         i_is_TIS, j_is_TIS,                  &
       !$omp         ij_is_KH_pair,                       &
       !$omp         i_base_type, j_base_type)            &
       !$omp firstprivate(num_excl, num_nb14, do_allocate)
@@ -852,10 +872,15 @@ contains
                         i_base_type == NABaseTypeRBG .or. i_base_type == NABaseTypeRBU .or. &
                         i_base_type == NABaseTypeRP .or. i_base_type == NABaseTypeRS
 
+          i_is_TIS    = i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
+                        i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
+                        i_base_type == NABaseTypeTRP  .or. i_base_type == NABaseTypeTRS
+
           do j = i + 1, natom
 
             dij(1:3) = coord(1:3,i) - coord(1:3,j)
             rij2     = dij(1)*dij(1) + dij(2)*dij(2) + dij(3)*dij(3)
+
 
             if (rij2 > pairdist2_longest) then
               cycle
@@ -883,6 +908,10 @@ contains
             j_is_RNA = j_base_type == NABaseTypeRBA .or. j_base_type == NABaseTypeRBC .or. &
                        j_base_type == NABaseTypeRBG .or. j_base_type == NABaseTypeRBU .or. &
                        j_base_type == NABaseTypeRP .or. j_base_type == NABaseTypeRS
+
+            j_is_TIS = j_base_type == NABaseTypeTRBA .or. j_base_type == NABaseTypeTRBC .or. &
+                       j_base_type == NABaseTypeTRBG .or. j_base_type == NABaseTypeTRBU .or. &
+                       j_base_type == NABaseTypeTRP  .or. j_base_type == NABaseTypeTRS
 
             ! ----------------------------
             ! test if i and j are KH-pairs
@@ -1001,6 +1030,104 @@ contains
               ! 
             end if
 
+            ! =============
+            ! TIS mwca
+            ! =============
+            !
+            if (rij2 < pairdist2_mwca) then
+              if (i_is_TIS .and. j_is_TIS) then
+                num_mwca(id) = num_mwca(id) + 1
+                if (.not. do_allocate) then
+                  pairlist%tis_mwca_list(num_mwca(id), id) = j
+                  pairlist%tis_mwca_eps(num_mwca(id), id) = 0.2_wp
+
+                  ! B-B
+                  if ((i_base_type >= NABaseTypeTRBA .and. i_base_type <= NABaseTypeTRBU) .and. &
+                      (j_base_type >= NABaseTypeTRBA .and. j_base_type <= NABaseTypeTRBU)) then
+                    pairlist%tis_mwca_D(num_mwca(id), id) = 3.2_wp
+
+                  else if (i_base_type == NABaseTypeTRBA) then
+                    ! A-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.410_wp
+                    ! A-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.130_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRBC) then
+                    ! C-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    ! C-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRBG) then
+                    ! G-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.590_wp
+                    ! G-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.310_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRBU) then
+                    ! U-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    ! U-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRP) then
+                    ! P-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 3.780_wp
+                    ! P-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.500_wp
+                    ! P-A
+                    else if (j_base_type == NABaseTypeTRBA) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.410_wp
+                    ! P-C
+                    else if (j_base_type == NABaseTypeTRBC) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    ! P-G
+                    else if (j_base_type == NABaseTypeTRBG) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.590_wp
+                    ! P-U
+                    else if (j_base_type == NABaseTypeTRBU) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRS) then
+                    ! S-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.500_wp
+                    ! S-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.220_wp
+                    ! S-A
+                    else if (j_base_type == NABaseTypeTRBA) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.130_wp
+                    ! S-C
+                    else if (j_base_type == NABaseTypeTRBC) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    ! S-G
+                    else if (j_base_type == NABaseTypeTRBG) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.310_wp
+                    ! S-U
+                    else if (j_base_type == NABaseTypeTRBU) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    end if
+                  end if
+                end if
+              end if
+            end if
+
           end do                ! j = i + 1, n_atom
         end if
 
@@ -1015,6 +1142,8 @@ contains
           num_exv_pre(id)                         = num_exv(id)
           pairlist%num_cg_kh_calc(i,id)           = num_kh(id)      - num_kh_pre(id)
           num_kh_pre(id)                          = num_kh(id)
+          pairlist%num_tis_mwca_calc(i,id)        = num_mwca(id)    - num_mwca_pre(id)
+          num_mwca_pre(id)                        = num_mwca(id)
         end if
 
       end do                    ! i = 1, n_atom - 1
@@ -1028,12 +1157,14 @@ contains
         num_ele_max     = 0
         num_exv_max     = 0
         num_kh_max      = 0
+        num_mwca_max    = 0
         do i = 1, nthread
           num_DNA_bp_max  = max(num_DNA_bp_max, num_DNA_bp(i))
           num_DNA_exv_max = max(num_DNA_exv_max, num_DNA_exv(i))
           num_ele_max     = max(num_ele_max, num_ele(i))
           num_exv_max     = max(num_exv_max, num_exv(i))
           num_kh_max      = max(num_kh_max, num_kh(i))
+          num_mwca_max    = max(num_mwca_max, num_mwca(i))
         end do
 
         num_DNA_bp_max  = int(real(num_DNA_bp_max,wp )*FactNumNb15)
@@ -1041,18 +1172,21 @@ contains
         num_ele_max     = int(real(num_ele_max,wp    )*FactNumNb15)
         num_exv_max     = int(real(num_exv_max,wp    )*FactNumNb15)
         num_kh_max      = int(real(num_kh_max,wp     )*FactNumNb15)
+        num_mwca_max    = int(real(num_mwca_max,wp   )*FactNumNb15)
 
         call alloc_pairlist (pairlist, PairListCGDNABP,  num_DNA_bp_max )
         call alloc_pairlist (pairlist, PairListCGDNAexv, num_DNA_exv_max)
         call alloc_pairlist (pairlist, PairListCGele,    num_ele_max    )
         call alloc_pairlist (pairlist, PairListCGexv,    num_exv_max    )
         call alloc_pairlist (pairlist, PairListCGKH,     num_kh_max     )
+        call alloc_pairlist (pairlist, PairListTISmwca,  num_mwca_max    )
 
         pairlist%num_cg_DNA_basepair_max = num_DNA_bp_max
         pairlist%num_cg_DNA_exv_max      = num_DNA_exv_max
         pairlist%num_cg_ele_max          = num_ele_max
         pairlist%num_cg_exv_max          = num_exv_max
         pairlist%num_cg_kh_max           = num_kh_max
+        pairlist%num_tis_mwca_max        = num_mwca_max
 
         do_allocate = .false.
       end if
@@ -1071,8 +1205,10 @@ contains
          pairlist%num_cg_exv_max, need_reallocate_4)
     call check_pairlist_memory_size(num_kh, &
          pairlist%num_cg_kh_max, need_reallocate_5)
+    call check_pairlist_memory_size(num_mwca, &
+         pairlist%num_tis_mwca_max, need_reallocate_6)
     pairlist%allocate_nobc_cg = need_reallocate_1 .or. need_reallocate_2 .or. &
-        need_reallocate_3 .or. need_reallocate_4 .or. need_reallocate_5
+        need_reallocate_3 .or. need_reallocate_4 .or. need_reallocate_5 .or. need_reallocate_6
 
     return
 

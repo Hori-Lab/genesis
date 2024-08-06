@@ -187,6 +187,7 @@ contains
           ctrl_data%ene_info%cg_pairlistdist_PWMcos, &
           ctrl_data%ene_info%cg_pairlistdist_DNAbp, &
           ctrl_data%ene_info%cg_pairlistdist_exv, &
+          ctrl_data%ene_info%tis_pairlistdist_mwca, &
           boundary)
     else
       call update_boundary(ctrl_data%ene_info%table, &
@@ -374,6 +375,7 @@ contains
           ctrl_data%ene_info%cg_pairlistdist_PWMcos, &
           ctrl_data%ene_info%cg_pairlistdist_DNAbp, &
           ctrl_data%ene_info%cg_pairlistdist_exv, &
+          ctrl_data%ene_info%tis_pairlistdist_mwca, &
           boundary)
     else
       call update_boundary(ctrl_data%ene_info%table, &
@@ -566,6 +568,7 @@ contains
           ctrl_data%ene_info%cg_pairlistdist_PWMcos, &
           ctrl_data%ene_info%cg_pairlistdist_DNAbp, &
           ctrl_data%ene_info%cg_pairlistdist_exv, &
+          ctrl_data%ene_info%tis_pairlistdist_mwca, &
           boundary)
     else
       call update_boundary(ctrl_data%ene_info%table, &
@@ -789,6 +792,7 @@ contains
           ctrl_data%ene_info%cg_pairlistdist_PWMcos, &
           ctrl_data%ene_info%cg_pairlistdist_DNAbp, &
           ctrl_data%ene_info%cg_pairlistdist_exv, &
+          ctrl_data%ene_info%tis_pairlistdist_mwca, &
           boundary)
     else
       call update_boundary(ctrl_data%ene_info%table, &
@@ -993,6 +997,7 @@ contains
           ctrl_data%ene_info%cg_pairlistdist_PWMcos, &
           ctrl_data%ene_info%cg_pairlistdist_DNAbp, &
           ctrl_data%ene_info%cg_pairlistdist_exv, &
+          ctrl_data%ene_info%tis_pairlistdist_mwca, &
           boundary)
     else
       call update_boundary(ctrl_data%ene_info%table, &
@@ -1152,6 +1157,7 @@ contains
           ctrl_data%ene_info%cg_pairlistdist_PWMcos, &
           ctrl_data%ene_info%cg_pairlistdist_DNAbp, &
           ctrl_data%ene_info%cg_pairlistdist_exv, &
+          ctrl_data%ene_info%tis_pairlistdist_mwca, &
           boundary)
     else
       call update_boundary(ctrl_data%ene_info%table, &

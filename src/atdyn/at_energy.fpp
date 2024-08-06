@@ -138,6 +138,8 @@ module at_energy_mod
     real(wp)              :: cg_IDR_HPS_epsilon     = 0.2_wp
     real(wp)              :: cg_exv_sigma_scaling   = 1.0_wp
     logical               :: cg_infinite_DNA        = .false.
+
+    real(wp)              :: tis_pairlistdist_mwca  = 11.0_wp
   end type s_ene_info
 
   ! varibles
@@ -470,6 +472,9 @@ contains
         ene_info%cg_exv_sigma_scaling)
     call read_ctrlfile_logical(handle, Section, 'cg_infinite_DNA',        &
         ene_info%cg_infinite_DNA)
+
+    call read_ctrlfile_real   (handle, Section, 'tis_pairlistdist_mwca',  &
+        ene_info%tis_pairlistdist_mwca)
 
 !!!develop
     !TODO CK
@@ -1957,12 +1962,10 @@ contains
 
       if (enefunc%forcefield == ForcefieldRESIDCG) then
 
-        continue
-
-        !if (enefunc%tis_wca_calc) then
-        !  call compute_energy_tis_wca(enefunc, pairlist, coord, &
-        !      force_omp, virial, energy%tis_wca)
-        !end if
+        if (enefunc%tis_mwca_calc) then
+          call compute_energy_tis_mwca(enefunc, molecule, pairlist, &
+                                     coord, force_omp, virial, energy%cg_exv)
+        end if
 
       end if
 

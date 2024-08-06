@@ -341,6 +341,7 @@ module at_enefunc_str_mod
 
     integer                       :: num_tis_lstack
     logical                       :: tis_lstack_calc
+    logical                       :: tis_mwca_calc
 
     integer                       :: istart_bond,          iend_bond
     integer                       :: istart_angle,         iend_angle
@@ -516,6 +517,9 @@ module at_enefunc_str_mod
     real(wp),         allocatable :: tis_lstack_r0(:)
     real(wp),         allocatable :: tis_lstack_phi10(:)
     real(wp),         allocatable :: tis_lstack_phi20(:)
+
+    ! TIS modified Weeks-Chandler-Andersen (mwca)
+    real(wp)                      :: tis_mwca_a
 
     ! ~CG~ : debye-huckel ele
     real(wp),         allocatable :: cg_charge(:)
@@ -694,6 +698,7 @@ module at_enefunc_str_mod
     real(wp)                      :: cg_pairlistdist_PWMcos
     real(wp)                      :: cg_pairlistdist_DNAbp
     real(wp)                      :: cg_pairlistdist_exv
+    real(wp)                      :: tis_pairlistdist_mwca
     real(wp)                      :: cg_ele_coef
     real(wp)                      :: cg_ele_sol_T
     real(wp)                      :: cg_ele_sol_IC
@@ -936,6 +941,7 @@ module at_enefunc_str_mod
   integer,      public, parameter :: EneFuncCGKHmol       = 55
   ! TIS
   integer,      public, parameter :: EneFuncTISLocalStack = 56
+  integer,      public, parameter :: EneFuncTISmwca       = 57
 
   ! parameters
   integer,      public, parameter :: ForcefieldCHARMM     = 1
@@ -989,6 +995,12 @@ module at_enefunc_str_mod
   integer,      public, parameter :: NABaseTypeRS         = 14
   integer,      public, parameter :: NABaseTypeNAMAX      = 15
   integer,      public, parameter :: NABaseTypeProtein    = 21
+  integer,      public, parameter :: NABaseTypeTRP        = 22 ! TIS RNA Phosphate
+  integer,      public, parameter :: NABaseTypeTRS        = 23 ! TIS RNA Sugar
+  integer,      public, parameter :: NABaseTypeTRBA       = 24 ! TIS RNA Base (A)
+  integer,      public, parameter :: NABaseTypeTRBC       = 25 ! TIS RNA Base (C)
+  integer,      public, parameter :: NABaseTypeTRBG       = 26 ! TIS RNA Base (G)
+  integer,      public, parameter :: NABaseTypeTRBU       = 27 ! TIS RNA Base (U) * The order must be A-C-G-U
   
   character(*), public, parameter :: ForceFieldTypes(10) = (/'CHARMM    ', &
                                                              'CHARMM19  ', &
@@ -1229,6 +1241,7 @@ contains
     enefunc%cg_IDR_KH_calc          = .false.
     enefunc%cg_KH_calc              = .false.
     enefunc%tis_lstack_calc         = .false.
+    enefunc%tis_mwca_calc           = .false.
 
     enefunc%gamd_use                = .false.
 
@@ -1919,6 +1932,20 @@ contains
       enefunc%tis_lstack_r0   (1:var_size     ) = 0.0_wp
       enefunc%tis_lstack_phi10(1:var_size     ) = 0.0_wp
       enefunc%tis_lstack_phi20(1:var_size     ) = 0.0_wp
+
+!    case(EneFuncTISmwca)
+!      ! TIS mWCA
+!      if (allocated(enefunc%tis_lstack_list)) then
+!        if (size(enefunc%tis_lstack_list(1,:)) == var_size) return
+!        deallocate(enefunc%tis_lstack_list,  &
+!                   enefunc%tis_lstack_h,     &
+!                   stat = dealloc_stat)
+!      end if
+!
+!      allocate(enefunc%tis_lstack_list(7,var_size),  &
+!               enefunc%tis_lstack_h(var_size),       &
+!               stat = alloc_stat)
+!
 
     case(EneFuncNbon)
 
