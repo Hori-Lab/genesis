@@ -3724,7 +3724,7 @@ contains
       ! ----------------
       ! Model Parameters
       ! ----------------
-      enefunc%tis_mwca_a = 1.6_wp
+      enefunc%tis_mwca_a = 1.58520_wp
     end if
 
     return

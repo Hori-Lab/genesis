@@ -677,7 +677,7 @@ contains
         adr4 = adr2 * adr2
         adr8 = adr4 * adr4
 
-        dv_dr = abs(12.0e0_wp * eps * (adr8*adr4*adr2 - adr8) * dr / a2 / dist)
+        dv_dr = abs(12.0e0_wp * eps * (adr2*adr4*adr8 - adr8) * dr / a2 / dist)
 
         if (dv_dr > 50.0_wp) then
           dv_dr = 50.0_wp
@@ -689,7 +689,8 @@ contains
 
         !if (dist > d_inf) then
         enemwca = enemwca + eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
-        !print *, 'i, j, dist, D, eps, ene', i, j, dist, D, eps, eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
+        !print *, 'i, j, dist, D, a, eps, ene', i, j, dist, D, a, eps, eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
+        !print *, 'dv_dr', dv_dr
         !print *, 'coord(i)', coord(1:3, i)
         !print *, 'coord(j)', coord(1:3, j)
         !print *, 'force(i)', for(1:3)
