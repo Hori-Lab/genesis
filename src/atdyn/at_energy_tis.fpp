@@ -239,7 +239,7 @@ contains
       f_i(:) = + 2.0e0_wp * Kphi2(i) * d * abs56 / dmm * m(:)
       f_l(:) = - 2.0e0_wp * Kphi2(i) * d * abs56 / dnn * n(:)
 
-      for(:, 7) = for(:, 7) + f_i(:)
+      for(:, 7) =           + f_i(:)
       for(:, 6) = for(:, 6) + (-1.0e0_wp + d7656over5656) * f_i(:) &
                             - (            d5456over5656) * f_l(:)
       for(:, 5) = for(:, 5) - (            d7656over5656) * f_i(:) &
@@ -506,7 +506,7 @@ contains
       f_i(:) = + 2.0e0_wp * Kphi2(i) * d * abs56 / dmm * m(:)
       f_l(:) = - 2.0e0_wp * Kphi2(i) * d * abs56 / dnn * n(:)
 
-      for(:, 7) = for(:, 7) + f_i(:)
+      for(:, 7) =           + f_i(:)
       for(:, 6) = for(:, 6) + (-1.0e0_wp + d7656over5656) * f_i(:) &
                             - (            d5456over5656) * f_l(:)
       for(:, 5) = for(:, 5) - (            d7656over5656) * f_i(:) &
