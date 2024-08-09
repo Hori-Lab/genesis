@@ -595,6 +595,14 @@ module fileio_grotop_mod
     logical                        :: is_intermol = .true.
   end type s_tis_mwca_mol_pair
 
+  type, public :: s_tis_mwca_atomtype
+    character(6)                   :: type_name_1    = ''
+    character(6)                   :: type_name_2    = ''
+    integer                        :: func         = 0
+    real(wp)                       :: Dij          = 0.0_wp
+    real(wp)                       :: epsilon      = 0.0_wp
+  end type s_tis_mwca_atomtype
+
   ! topology data
   type, public :: s_grotop
     integer                               :: num_atomtypes      = 0
@@ -621,6 +629,7 @@ module fileio_grotop_mod
     integer                               :: num_cg_KH_atomtypes = 0
     integer                               :: num_cg_pair_MJ_eps = 0
     integer                               :: num_tismwcamolpairs= 0
+    integer                               :: num_tismwcatypes= 0
     logical                               :: alias_atomtype     = .false.
     type(s_defaults)                      :: defaults
     type(s_atomtype),         allocatable :: atomtypes(:)
@@ -651,6 +660,7 @@ module fileio_grotop_mod
     type(s_itpread)                       :: itpread
 
     type(s_tis_mwca_mol_pair),  allocatable :: tis_mwca_mol_pairs(:)
+    type(s_tis_mwca_atomtype),  allocatable :: tis_mwca_atomtypes(:)
   end type s_grotop
 
   ! parameters for TOP molecule structure allocatable variables
@@ -701,6 +711,7 @@ module fileio_grotop_mod
   integer,      public, parameter :: GroTopCGPairMJEpsilon  = 22
   integer,      public, parameter :: GroTopCGKHMolPair   = 23
   integer,      public, parameter :: GroTopTISmWCAMolPair= 24
+  integer,      public, parameter :: GroTopTISmWCAType = 25
 
   ! parameters for directive
   integer,     private, parameter :: DDefaults             = 1
@@ -760,6 +771,7 @@ module fileio_grotop_mod
   !    TIS
   integer,     private, parameter :: DTISLocalStack        = 50
   integer,     private, parameter :: DTISmWCAMolPairs      = 51
+  integer,     private, parameter :: DTISmWCAAtomTypes     = 52
 
   ! parameters
   logical,     private, parameter :: VerboseOn        = .false.
@@ -833,6 +845,7 @@ module fileio_grotop_mod
   private :: read_idr_kh
   private :: read_tis_lstack
   private :: read_tis_mwca_mol_pairs
+  private :: read_tis_mwca_types
 
   private :: write_grotop
   private :: write_defaults
@@ -1076,6 +1089,7 @@ contains
     grotop%num_cg_KH_atomtypes= 0
     grotop%num_cg_pair_MJ_eps = 0
     grotop%num_tismwcamolpairs= 0
+    grotop%num_tismwcatypes   = 0
     grotop%alias_atomtype     = .false.
 
     return
@@ -1169,6 +1183,7 @@ contains
     type(s_cg_KH_atomtype),   allocatable :: cg_KH_atomtypes(:)
     type(s_cg_pair_MJ_eps),   allocatable :: cg_pair_MJ_eps(:)
     type(s_tis_mwca_mol_pair),allocatable :: tis_mwca_mol_pairs(:)
+    type(s_tis_mwca_atomtype),allocatable :: tis_mwca_atomtypes(:)
 
 
     select case(variable)
@@ -1872,6 +1887,35 @@ contains
               call error_msg_alloc
       end if
 
+    case(GroTopTISmWCAType)
+      if (allocated(grotop%tis_mwca_atomtypes)) then
+
+        old_size = size(grotop%tis_mwca_atomtypes)
+        if (old_size == var_size) &
+              return
+        allocate(tis_mwca_atomtypes(old_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+              call error_msg_alloc
+        tis_mwca_atomtypes(:) = grotop%tis_mwca_atomtypes(:)
+        deallocate(grotop%tis_mwca_atomtypes, stat = alloc_stat)
+        if (alloc_stat /= 0) &
+              call error_msg_dealloc
+        allocate(grotop%tis_mwca_atomtypes(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+              call error_msg_alloc
+        if (old_size > var_size) then
+          grotop%tis_mwca_atomtypes(1:var_size) = tis_mwca_atomtypes(1:var_size)
+        else
+          grotop%tis_mwca_atomtypes(1:old_size) = tis_mwca_atomtypes(1:old_size)
+        end if
+        deallocate(tis_mwca_atomtypes, stat = alloc_stat)
+      else
+        old_size = 0
+        allocate(grotop%tis_mwca_atomtypes(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+              call error_msg_alloc
+      end if
+      
     case default
 
       call error_msg('Realloc_Grotop> bad variable')
@@ -3055,6 +3099,9 @@ contains
       case (DTISmWCAMolPairs)
         call read_tis_mwca_mol_pairs(file, grotop)
 
+      case (DTISmWCAAtomTypes)
+        call read_tis_mwca_types(file, grotop)
+
       case (DUnknown)
         if (main_rank) &
           write(MsgOut,*) 'Read_Grotop> INFO. Unknown directive:'// &
@@ -3092,6 +3139,7 @@ contains
     grotop%num_cg_KH_atomtypes= size_grotop(grotop, GroTopCGKHAtomType)
     grotop%num_cg_pair_MJ_eps = size_grotop(grotop, GroTopCGPairMJEpsilon)
     grotop%num_tismwcamolpairs= size_grotop(grotop, GroTopTISmWCAMolPair)
+    grotop%num_tismwcatypes   = size_grotop(grotop, GroTopTISmWCAType)
 
     ! bind molecule and type
     !
@@ -3249,6 +3297,10 @@ contains
       if (grotop%num_tismwcamolpairs > 0) then
         write(MsgOut,'(A24,I6)') &
             '  num_tismwcamolpairs = ', grotop%num_tismwcamolpairs
+      endif
+      if (grotop%num_tismwcatypes > 0) then
+        write(MsgOut,'(A24,I6)') &
+            '  num_tis_mwca_atom_types = ', grotop%num_tismwcatypes
       endif
       if (grotop%num_cg_pair_MJ_eps > 0) then
         write(MsgOut,'(A24,I6)') &
@@ -4101,6 +4153,70 @@ contains
     return
 
   end subroutine read_cmap_types
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    read_tis_mwca_types
+  !> @brief        read section [ tis_mwca_atomtypes ]
+  !! @authors      MC (altered from read_base_stack_types)
+  !! @param[in]    file   : file unit number
+  !! @param[inout] grotop : GROMACS TOP information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine read_tis_mwca_types(file, grotop)
+      
+      ! formal arguments
+      integer,                 intent(in)    :: file
+      type(s_grotop),  target, intent(inout) :: grotop
+  
+      ! local variables
+      integer                  :: i, cnt, old_cnt
+      character(MaxLine)       :: line
+      character(100)           :: error
+
+      type(s_tis_mwca_atomtype),    pointer  :: tismwca
+
+      ! check count
+      cnt = check_section_count(file)
+
+      ! allocate memory
+      old_cnt = size_grotop(grotop, GroTopTisMwcaType)
+
+      call realloc_grotop(grotop, GroTopTisMwcaType, old_cnt+cnt)
+
+      if (VerboseOn .and. main_rank) then
+        write(MsgOut,'(" Read_Grotop> [ tis_mwca_atomtypes ] proper   :"'// &
+             ',i5," (total:",i5,")")') cnt, old_cnt+cnt
+      end if
+
+      ! read data
+      do i = 1, cnt
+
+        tismwca => grotop%tis_mwca_atomtypes(old_cnt+i)
+
+        if (.not. gro_pp_next_line(file, line, error)) &
+          goto 900
+
+        if (match_format(line, 'SS1NN')) then
+          read(line,*)           &
+            tismwca%type_name_1, &
+            tismwca%type_name_2, &
+            tismwca%func,        &
+            tismwca%Dij,         &
+            tismwca%epsilon
+        else
+          call error_msg_grotop(file, 'Read_Grotop> read error. [ tis_mwca_atomtypes ]')
+        end if
+      end do
+
+      return
+
+900 call error_msg_grotop(file, 'Read_Grotop> read error. [ tis_mwca_atomtypes ]')
+
+      return
+
+  end subroutine read_tis_mwca_types
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !
@@ -6904,7 +7020,7 @@ contains
     character(20)            :: name
 
 
-    ! checko count
+    ! check count
     !
     cnt = check_section_count(file)
 
@@ -10948,6 +11064,8 @@ contains
       directive = DTISLocalStack
     case ('tis_mwca_chain_pairs')
       directive = DTISmWCAMolPairs
+    case ('tis_mwca_atomtypes')
+      directive = DTISmWCAAtomTypes
     case default
       directive = DUnknown
     end select
@@ -11077,6 +11195,10 @@ contains
     case(GroTopTISmWCAMolPair)
       if (allocated(grotop%tis_mwca_mol_pairs)) &
           size_grotop = size(grotop%tis_mwca_mol_pairs)
+
+    case(GroTopTISmWCAType)
+      if (allocated(grotop%tis_mwca_atomtypes)) &
+          size_grotop = size(grotop%tis_mwca_atomtypes)
 
     case default
       call error_msg('Size_Grotop> bad variable')
