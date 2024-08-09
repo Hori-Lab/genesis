@@ -618,6 +618,7 @@ contains
 
     integer, pointer          :: num_mwca_calc(:,:), mwca_list(:,:)
     real(wp), pointer         :: mwca_D(:,:), mwca_eps(:,:)
+    integer, pointer          :: atomtype(:)
 
 
     call timer(TimerNonBond, TimerOn)
@@ -627,8 +628,9 @@ contains
     natom          =  molecule%num_atoms
     num_mwca_calc  => pairlist%num_tis_mwca_calc
     mwca_list      => pairlist%tis_mwca_list
-    mwca_eps       => pairlist%tis_mwca_eps
-    mwca_D         => pairlist%tis_mwca_D
+    mwca_eps       => enefunc%tis_mwca_eps
+    mwca_D         => enefunc%tis_mwca_D
+    atomtype      => enefunc%atom_cls
     num_mwca       = 0
 
     a = enefunc%tis_mwca_a
@@ -640,7 +642,7 @@ contains
     !$omp firstprivate(num_mwca)                                    &
     !$omp private(ini_mwca, fin_mwca, i, k, j, l, dij, grad, dist,  &
     !$omp         D, eps, dr, adr2, adr4, adr8, dv_dr, id)          &
-    !$omp shared(natom, num_mwca_calc, mwca_list,                   &
+    !$omp shared(natom, num_mwca_calc, mwca_list, atomtype,         &
     !$omp        mwca_eps, mwca_D, coord, force, a, a2)             &
     !$omp reduction(+:virial) reduction(+:enemwca)
     !
@@ -658,7 +660,8 @@ contains
       do k = ini_mwca, fin_mwca
 
         j = mwca_list(k,id)
-        D = mwca_D(k, id)
+
+        D = mwca_D(atomtype(i), atomtype(j))
 
         ! compute distance
         dij(1:3) = coord(1:3,i) - coord(1:3,j)
@@ -668,7 +671,7 @@ contains
         !
         if (dist >= D) cycle
 
-        eps = mwca_eps(k, id)
+        eps = mwca_eps(atomtype(i), atomtype(j))
 
         dr = dist + a - D
         adr2 = a2 / (dr*dr)
@@ -757,6 +760,7 @@ contains
 
     integer, pointer          :: num_mwca_calc(:,:), mwca_list(:,:)
     real(wp), pointer         :: mwca_D(:,:), mwca_eps(:,:)
+    integer, pointer          :: atomtype(:)
 
     call timer(TimerNonBond, TimerOn)
     call timer(TimerTISmWCA, TimerOn)
@@ -764,8 +768,9 @@ contains
     natom          = size(coord(1,:))
     num_mwca_calc  => pairlist%num_tis_mwca_calc
     mwca_list      => pairlist%tis_mwca_list
-    mwca_eps       => pairlist%tis_mwca_eps
-    mwca_D         => pairlist%tis_mwca_D
+    mwca_eps       => enefunc%tis_mwca_eps
+    mwca_D         => enefunc%tis_mwca_D
+    atomtype      => enefunc%atom_cls
 
     bsize(1)       =  boundary%box_size_x
     bsize(2)       =  boundary%box_size_y
@@ -785,7 +790,7 @@ contains
     !$omp         i1, i2, i3, k1,                                   &
     !$omp         D, eps, dr, adr2, adr4, adr8, dv_dr, id,          &
     !$omp         ene_omp_tmp, coord_i, force_tmp)                  &
-    !$omp shared(natom, num_mwca_calc, mwca_list, bsize,            &
+    !$omp shared(natom, num_mwca_calc, mwca_list, bsize, atomtype,  &
     !$omp        mwca_eps, mwca_D, coord, force, a, a2, ene_omp)
     !
 #ifdef OMP
@@ -812,7 +817,6 @@ contains
 
         do k = ini_mwca, fin_mwca
 
-          D  = mwca_D(k, id)
           k1 = mwca_list(k, id)
           j  = k1 / 27
           k1 = k1 - j*27
@@ -823,6 +827,9 @@ contains
           i1 = i1 - 1
           i2 = i2 - 1
           i3 = i3 - 1
+
+          D = mwca_D(atomtype(i), atomtype(j))
+
 
           ! compute distance
           dij(1)  = coord_i(1) - coord(1,j) + bsize(1)*real(i1,wp)
@@ -835,7 +842,7 @@ contains
           !
           if (dist >= D) cycle
 
-          eps = mwca_eps(k, id)
+          eps = mwca_eps(atomtype(i), atomtype(j))
 
           dr = dist + a - D
           adr2 = a2 / (dr*dr)

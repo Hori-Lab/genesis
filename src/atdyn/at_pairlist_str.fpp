@@ -81,8 +81,6 @@ module at_pairlist_str_mod
     integer,          allocatable :: cg_KH_list(:,:)
     integer,          allocatable :: cg_KH_model_list(:,:)
     integer,          allocatable :: tis_mwca_list(:,:)
-    real(wp),         allocatable :: tis_mwca_eps(:,:)
-    real(wp),         allocatable :: tis_mwca_D(:,:)
     ! 
     integer,          allocatable :: num_cg_DNA_basepair_calc(:,:)
     integer,          allocatable :: num_cg_DNA_exv_calc(:,:)
@@ -482,13 +480,9 @@ contains
       if (allocated(pairlist%tis_mwca_list)) then
         if (size(pairlist%tis_mwca_list) == var_size*nthread) return
         deallocate(pairlist%tis_mwca_list, stat = dealloc_stat)
-        deallocate(pairlist%tis_mwca_eps, stat = dealloc_stat)
-        deallocate(pairlist%tis_mwca_D, stat = dealloc_stat)
       end if
 
       allocate(pairlist%tis_mwca_list(var_size,nthread), stat = alloc_stat)
-      allocate(pairlist%tis_mwca_eps(var_size,nthread), stat = alloc_stat)
-      allocate(pairlist%tis_mwca_D(var_size,nthread), stat = alloc_stat)
 
     case (PairListPbcSolute)
 
@@ -955,13 +949,9 @@ contains
       if (allocated(pairlist%tis_mwca_list)) then
         if (size(pairlist%tis_mwca_list) == var_size*nthread) return
         deallocate(pairlist%tis_mwca_list, stat = dealloc_stat)
-        deallocate(pairlist%tis_mwca_eps, stat = dealloc_stat)
-        deallocate(pairlist%tis_mwca_D, stat = dealloc_stat)
       end if
 
       allocate(pairlist%tis_mwca_list(var_size,nthread), stat = alloc_stat)
-      allocate(pairlist%tis_mwca_eps(var_size,nthread), stat = alloc_stat)
-      allocate(pairlist%tis_mwca_D(var_size,nthread), stat = alloc_stat)
 
     ! ---------------------------
     ! cell head of linked list...
@@ -1200,8 +1190,6 @@ contains
 
       if (allocated(pairlist%tis_mwca_list)) then
         deallocate (pairlist%tis_mwca_list, &
-            pairlist%tis_mwca_D, &
-            pairlist%tis_mwca_eps, &
             stat = dealloc_stat)
       end if
 
@@ -1551,8 +1539,6 @@ contains
     case (PairListPbcTISmwca)
       if (allocated(pairlist%tis_mwca_list)) then
         deallocate(pairlist%tis_mwca_list, &
-                   pairlist%tis_mwca_D, &
-                   pairlist%tis_mwca_eps, &
                    stat = dealloc_stat)
       end if
 

@@ -3754,6 +3754,7 @@ contains
 
     ! local
     integer :: i, j, k
+    integer :: num_atomtypes_overall, num_atomtypes_mwcapairs
 
     ! Conditions:
     !  (1) [ tis_mwca_chain_pairs ] given in the input file
@@ -3786,6 +3787,27 @@ contains
           end do
         end if
       end do
+
+      num_atomtypes_overall = grotop%num_atomtypes
+      num_atomtypes_mwcapairs = grotop%num_tismwcatypes
+
+      ! For every atom in [atomtypes], allocate EneFuncTISmwcaType arrays
+      ! as [num_atomtypes_overall, num_atomtypes_overall] to give pairs of every atom
+      call alloc_enefunc(enefunc, EneFuncTISmwcaType, num_atomtypes_overall)
+
+      do i = 1, num_atomtypes_overall ! get the name of atom i
+        do j = 1, num_atomtypes_overall ! get the name of atom j
+          do k = 1, num_atomtypes_mwcapairs ! see if the i and j pair are in mwcapairs
+            if (grotop%atomtypes(i)%type_name == &
+                grotop%tis_mwca_atomtypes(k)%type_name_1 .and. &
+                grotop%atomtypes(j)%type_name == &
+                grotop%tis_mwca_atomtypes(k)%type_name_2) then
+              enefunc%tis_mwca_D(i, j) = grotop%tis_mwca_atomtypes(k)%Dij
+              enefunc%tis_mwca_eps(i, j) = grotop%tis_mwca_atomtypes(k)%epsilon
+            end if
+          end do ! k
+        end do ! j
+      end do ! i
 
     end if
 

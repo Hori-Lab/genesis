@@ -522,6 +522,8 @@ module at_enefunc_str_mod
     ! TIS modified Weeks-Chandler-Andersen (mwca)
     real(wp)                      :: tis_mwca_a
     integer,          allocatable :: tis_mwca_mol_pair(:,:)
+    real(wp),         allocatable :: tis_mwca_eps(:,:)
+    real(wp),         allocatable :: tis_mwca_D(:,:)
 
     ! ~CG~ : debye-huckel ele
     real(wp),         allocatable :: cg_charge(:)
@@ -945,6 +947,7 @@ module at_enefunc_str_mod
   ! TIS
   integer,      public, parameter :: EneFuncTISLocalStack = 56
   integer,      public, parameter :: EneFuncTISmwca       = 57
+  integer,      public, parameter :: EneFuncTISmwcaType   = 58
 
   ! parameters
   integer,      public, parameter :: ForcefieldCHARMM     = 1
@@ -1948,12 +1951,32 @@ contains
         deallocate( &
             enefunc%tis_mwca_mol_pair,  &
             stat = dealloc_stat)
+        
       end if
 
       allocate(enefunc%tis_mwca_mol_pair(var_size, var_size), &
           stat = alloc_stat)
 
       enefunc%tis_mwca_mol_pair(:, :) = 0
+
+    case(EneFuncTISmwcaType)
+
+      if (allocated(enefunc%tis_mwca_D)) then
+        if (size(enefunc%tis_mwca_D(1 , :)) == var_size .and. &
+            size(enefunc%tis_mwca_D(: , 1)) == var_size .and. &
+            size(enefunc%tis_mwca_eps(1,:)) == var_size .and. &
+            size(enefunc%tis_mwca_eps(:,1)) == var_size) return
+        deallocate(enefunc%tis_mwca_D,  &
+                   enefunc%tis_mwca_eps, &
+                   stat = dealloc_stat)
+      end if
+
+      allocate(enefunc%tis_mwca_D(var_size, var_size), &
+               enefunc%tis_mwca_eps(var_size, var_size), &
+               stat = alloc_stat)
+
+      enefunc%tis_mwca_D  (1:var_size, 1:var_size) = 0.0_wp
+      enefunc%tis_mwca_eps(1:var_size, 1:var_size) = 0.0_wp
 
     case(EneFuncNbon)
 
