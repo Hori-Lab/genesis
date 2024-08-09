@@ -1954,7 +1954,10 @@ contains
 
       if (enefunc%forcefield == ForcefieldRESIDCG) then
 
-        continue
+        if (enefunc%tis_mwca_calc) then
+          call compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
+                         coord_pbc, force_omp, virial, energy%cg_exv)
+        end if
 
       end if
 

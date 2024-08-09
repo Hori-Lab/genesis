@@ -51,6 +51,7 @@ module at_enefunc_gromacs_mod
   private :: setup_enefunc_cgDNA_base_stack
   private :: setup_enefunc_cgDNA_nonb
   private :: setup_enefunc_tis_lstack
+  private :: setup_enefunc_tis_mwca
   private :: setup_enefunc_cg_ele
   private :: setup_enefunc_cg_KH
   private :: setup_enefunc_cg_PWMcos
@@ -344,6 +345,10 @@ contains
       if (enefunc%num_multi_contacts > 0) then
         write(MsgOut,'(A20,I10)')                                 &
            '  multi_contact   = ', enefunc%num_multi_contacts
+      end if
+      if (enefunc%num_tis_lstack > 0)  then
+        write(MsgOut,'(A20,I10)')                         &
+           '  tis_lstack      = ', enefunc%num_tis_lstack
       end if
       write(MsgOut,'(A20,I10,A20,I10)')                         &
            '  vsite2_ene      = ', enefunc%num_vsite2,          &
@@ -1130,7 +1135,7 @@ contains
     integer              :: n_atoms
     integer              :: n_phos
     integer              :: n_base
-    integer              :: n_dna
+    integer              :: n_dna, n_tis
     integer              :: alloc_stat
 
     integer, allocatable :: atom_cls_2_base_type(:)
@@ -1211,6 +1216,7 @@ contains
     n_phos = 0
     n_base = 0
     n_dna  = 0
+    n_tis  = 0
     do i = 1, n_atoms
       l = molecule%atom_cls_no(i)
       k = atom_cls_2_base_type(l)
@@ -1225,6 +1231,9 @@ contains
         else if (k == NABaseTypeDP) then
           n_phos = n_phos + 1
         end if
+
+      else if (k >= NABaseTypeTISMIN .and. k <= NABaseTypeTISMAX) then
+        n_tis = n_tis + 1
       end if
 
       enefunc%NA_base_type(i) = k
@@ -1239,6 +1248,7 @@ contains
     enefunc%num_cg_particle_DNA_all  = n_dna
     enefunc%num_cg_particle_DNA_base = n_base
     enefunc%num_cg_particle_DNA_phos = n_phos
+    enefunc%num_cg_particle_TIS_all  = n_tis
 
     if (allocated(enefunc%cg_particle_DNA_all)) &
         deallocate(enefunc%cg_particle_DNA_all)
@@ -1255,9 +1265,15 @@ contains
     allocate(enefunc%cg_particle_DNA_phos(n_phos), stat=alloc_stat)
     if (alloc_stat /= 0) call error_msg_alloc
 
+    if (allocated(enefunc%cg_particle_TIS_all)) &
+        deallocate(enefunc%cg_particle_TIS_all)
+    allocate(enefunc%cg_particle_TIS_all(n_tis), stat=alloc_stat)
+    if (alloc_stat /= 0) call error_msg_alloc
+
     n_phos = 0
     n_base = 0
     n_dna  = 0
+    n_tis  = 0
     do i = 1, n_atoms
       k = enefunc%NA_base_type(i)
       if (k <= NABaseTypeDBMAX .or. &
@@ -1273,6 +1289,10 @@ contains
           n_phos = n_phos + 1
           enefunc%cg_particle_DNA_phos(n_phos) = i
         end if
+
+      else if (k >= NABaseTypeTISMIN .and. k <= NABaseTypeTISMAX) then
+        n_tis = n_tis + 1
+        enefunc%cg_particle_TIS_all(n_tis) = i
       end if
     end do
 
@@ -3732,13 +3752,41 @@ contains
     type(s_molecule),        intent(in)    :: molecule
     type(s_enefunc),         intent(inout) :: enefunc
 
-    if (grotop%num_tismwcamolpairs > 0) then
+    ! local
+    integer :: i, j, k
+
+    ! Conditions:
+    !  (1) [ tis_mwca_chain_pairs ] given in the input file
+    !  (2) More than one TIS beads in the system
+    if (grotop%num_tismwcamolpairs > 0 .and. enefunc%num_cg_particle_TIS_all > 1) then
+
       enefunc%tis_mwca_calc = .true.
 
       ! ----------------
       ! Model Parameters
       ! ----------------
       enefunc%tis_mwca_a = 1.58520_wp
+
+      call alloc_enefunc(enefunc, EneFuncTISmwca, molecule%num_molecules)
+
+      ! ---------------------------------
+      ! set mol-mol pairs
+      ! ---------------------------------
+      do i = 1, grotop%num_tismwcamolpairs
+        if (grotop%tis_mwca_mol_pairs(i)%is_intermol) then
+          do j = grotop%tis_mwca_mol_pairs(i)%grp1_start, grotop%tis_mwca_mol_pairs(i)%grp1_end
+            do k = grotop%tis_mwca_mol_pairs(i)%grp2_start, grotop%tis_mwca_mol_pairs(i)%grp2_end
+              enefunc%tis_mwca_mol_pair(j, k) = grotop%tis_mwca_mol_pairs(i)%func
+              enefunc%tis_mwca_mol_pair(k, j) = grotop%tis_mwca_mol_pairs(i)%func
+            end do
+          end do
+        else
+          do j = grotop%tis_mwca_mol_pairs(i)%grp1_start, grotop%tis_mwca_mol_pairs(i)%grp1_end
+            enefunc%tis_mwca_mol_pair(j, j) = grotop%tis_mwca_mol_pairs(i)%func
+          end do
+        end if
+      end do
+
     end if
 
     return

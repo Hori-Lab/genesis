@@ -803,12 +803,10 @@ contains
         if (size(pairlist%num_tis_mwca_calc) == var_size*nthread) return
         deallocate(pairlist%num_tis_mwca_calc,                        &
             pairlist%cell_linked_list_tis_mwca,                       &
-            !pairlist%cell_index_tis_mwca,                             &
             stat = dealloc_stat)
       end if
       allocate(pairlist%num_tis_mwca_calc(var_size,nthread),          &
           pairlist%cell_linked_list_tis_mwca(var_size),               &
-          !pairlist%cell_index_tis_mwca(var_size),                     &
           stat = alloc_stat)
 
     ! ---------------------------
@@ -1333,11 +1331,18 @@ contains
             pairlist%num_cg_exv,                      &
             stat = dealloc_stat)
       end if
+      if (allocated(pairlist%num_tis_mwca_pre))         then
+        deallocate(pairlist%num_tis_mwca_pre,         &
+            pairlist%num_tis_mwca,                    &
+            stat = dealloc_stat)
+      end if
+
     case (PairListNthCGPWMcos)
       if (allocated(pairlist%num_cg_pwmcos))       then
         deallocate (pairlist%num_cg_pwmcos,       &
             stat = dealloc_stat)
       end if
+
     case (PairListNthCGPWMcosns)
       if (allocated(pairlist%num_cg_pwmcosns))       then
         deallocate (pairlist%num_cg_pwmcosns,       &
@@ -1417,6 +1422,14 @@ contains
       if (allocated(pairlist%num_cg_KH_calc)) then
         deallocate(pairlist%num_cg_KH_calc,      &
             pairlist%cell_linked_list_cg_KH,     &
+            stat = dealloc_stat)
+      end if
+
+    case (PairListAtomPbcTISmwca)
+
+      if (allocated(pairlist%num_tis_mwca_calc)) then
+        deallocate(pairlist%num_tis_mwca_calc,      &
+            pairlist%cell_linked_list_tis_mwca,     &
             stat = dealloc_stat)
       end if
 
@@ -1563,8 +1576,6 @@ contains
 
     case default
 
-      print *, 'var=', variable
-      flush(6)
       call error_msg('Dealloc_PairList> bad variable')
 
     end select
@@ -1626,7 +1637,7 @@ contains
     call dealloc_pairlist(pairlist, PairListAtomPbcCGIDRHPS)
     call dealloc_pairlist(pairlist, PairListAtomPbcCGIDRKH)
     call dealloc_pairlist(pairlist, PairListAtomPbcCGKH)
-    !call dealloc_pairlist(pairlist, PairListAtomPbcTISmwca)
+    call dealloc_pairlist(pairlist, PairListAtomPbcTISmwca)
     call dealloc_pairlist(pairlist, PairListNthreadsPbcCG)
     call dealloc_pairlist(pairlist, PairListPbcCGDNAbp)
     call dealloc_pairlist(pairlist, PairListPbcCGDNAexv)

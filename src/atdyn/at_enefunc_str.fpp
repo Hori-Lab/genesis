@@ -334,6 +334,7 @@ module at_enefunc_str_mod
     integer                       :: num_cg_particle_KH
     integer                       :: num_cg_particle_charged
     integer                       :: num_cg_particle_pro_charged
+    integer                       :: num_cg_particle_TIS_all
     integer                       :: num_pwmcos_terms
     integer                       :: num_pwmcos_resid
     integer                       :: num_pwmcosns_terms
@@ -520,6 +521,7 @@ module at_enefunc_str_mod
 
     ! TIS modified Weeks-Chandler-Andersen (mwca)
     real(wp)                      :: tis_mwca_a
+    integer,          allocatable :: tis_mwca_mol_pair(:,:)
 
     ! ~CG~ : debye-huckel ele
     real(wp),         allocatable :: cg_charge(:)
@@ -604,6 +606,7 @@ module at_enefunc_str_mod
     integer,          allocatable :: cg_particle_KH(:)
     integer,          allocatable :: cg_particle_charged(:)
     integer,          allocatable :: cg_particle_pro_charged(:)
+    integer,          allocatable :: cg_particle_TIS_all(:)
     integer,          allocatable :: cg_istart_nonb_excl(:)
 
     ! nonbonded 1-4 interactions (size = num_nb14)
@@ -995,12 +998,15 @@ module at_enefunc_str_mod
   integer,      public, parameter :: NABaseTypeRS         = 14
   integer,      public, parameter :: NABaseTypeNAMAX      = 15
   integer,      public, parameter :: NABaseTypeProtein    = 21
+
+  integer,      public, parameter :: NABaseTypeTISMIN     = 22 ! TIS RNA Phosphate
   integer,      public, parameter :: NABaseTypeTRP        = 22 ! TIS RNA Phosphate
   integer,      public, parameter :: NABaseTypeTRS        = 23 ! TIS RNA Sugar
   integer,      public, parameter :: NABaseTypeTRBA       = 24 ! TIS RNA Base (A)
   integer,      public, parameter :: NABaseTypeTRBC       = 25 ! TIS RNA Base (C)
   integer,      public, parameter :: NABaseTypeTRBG       = 26 ! TIS RNA Base (G)
   integer,      public, parameter :: NABaseTypeTRBU       = 27 ! TIS RNA Base (U) * The order must be A-C-G-U
+  integer,      public, parameter :: NABaseTypeTISMAX     = 27 ! TIS RNA Phosphate
   
   character(*), public, parameter :: ForceFieldTypes(10) = (/'CHARMM    ', &
                                                              'CHARMM19  ', &
@@ -1267,6 +1273,7 @@ contains
     enefunc%num_cg_particle_KH          = 0
     enefunc%num_cg_particle_charged     = 0
     enefunc%num_cg_particle_pro_charged = 0
+    enefunc%num_cg_particle_TIS_all     = 0
 
     enefunc%rpath_sum_avforce       = .false.
     enefunc%mep_natoms              = 0
@@ -1933,19 +1940,20 @@ contains
       enefunc%tis_lstack_phi10(1:var_size     ) = 0.0_wp
       enefunc%tis_lstack_phi20(1:var_size     ) = 0.0_wp
 
-!    case(EneFuncTISmwca)
-!      ! TIS mWCA
-!      if (allocated(enefunc%tis_lstack_list)) then
-!        if (size(enefunc%tis_lstack_list(1,:)) == var_size) return
-!        deallocate(enefunc%tis_lstack_list,  &
-!                   enefunc%tis_lstack_h,     &
-!                   stat = dealloc_stat)
-!      end if
-!
-!      allocate(enefunc%tis_lstack_list(7,var_size),  &
-!               enefunc%tis_lstack_h(var_size),       &
-!               stat = alloc_stat)
-!
+    case(EneFuncTISmwca)
+
+      if (allocated(enefunc%tis_mwca_mol_pair)) then
+        if (size(enefunc%tis_mwca_mol_pair(1, :)) == var_size .and. &
+            size(enefunc%tis_mwca_mol_pair(:, 1)) == var_size) return
+        deallocate( &
+            enefunc%tis_mwca_mol_pair,  &
+            stat = dealloc_stat)
+      end if
+
+      allocate(enefunc%tis_mwca_mol_pair(var_size, var_size), &
+          stat = alloc_stat)
+
+      enefunc%tis_mwca_mol_pair(:, :) = 0
 
     case(EneFuncNbon)
 

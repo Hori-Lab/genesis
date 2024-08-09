@@ -27,6 +27,7 @@ module at_energy_tis_mod
   public  :: compute_energy_tis_lstack
   public  :: compute_energy_tis_lstack_pbc
   public  :: compute_energy_tis_mwca
+  public  :: compute_energy_tis_mwca_pbc
 
 contains
 
@@ -582,7 +583,7 @@ contains
   !======1=========2=========3=========4=========5=========6=========7=========8
   !
   !  Subroutine    compute_energy_tis_mwca
-  !> @brief        calculate non-contact energy with pairlist (NOBC)
+  !> @brief        calculate mWCA energy with pairlist (NOBC)
   !! @authors      NH
   !! @param[in]    enefunc  : potential energy functions information
   !! @param[in]    molecule : molecule information
@@ -590,9 +591,9 @@ contains
   !! @param[in]    coord    : coordinates of target systems
   !! @param[inout] force    : forces of target systems
   !! @param[inout] virial   : virial of target systems
-  !! @param[inout] encont   : contact energy of target systems
+  !! @param[inout] enemwca  : mWCA energy of target systems
   !! @note         TIS modified Weeks-Chandler-Andersen potential
-  ! 
+  !
   !======1=========2=========3=========4=========5=========6=========7=========8
 
   subroutine compute_energy_tis_mwca(enefunc, molecule, pairlist, &
@@ -610,13 +611,12 @@ contains
     ! local variables
     real(wp)                  :: a, a2, dij(3), dist
     real(wp)                  :: dr, adr2, adr4, adr8
-    real(wp)                  :: for(3), dv_dr, eps, D
+    real(wp)                  :: grad(3), dv_dr, eps, D
     integer                   :: i, j, k, l, natom, id
     integer                   :: num_mwca, ini_mwca, fin_mwca
-    integer                   :: nthread
-    integer                   :: omp_get_num_threads, omp_get_thread_num
+    integer                   :: omp_get_thread_num
 
-    integer, pointer          :: num_mwca_calc(:,:), mwca_calc_list(:,:)
+    integer, pointer          :: num_mwca_calc(:,:), mwca_list(:,:)
     real(wp), pointer         :: mwca_D(:,:), mwca_eps(:,:)
 
 
@@ -626,7 +626,7 @@ contains
     !
     natom          =  molecule%num_atoms
     num_mwca_calc  => pairlist%num_tis_mwca_calc
-    mwca_calc_list => pairlist%tis_mwca_list
+    mwca_list      => pairlist%tis_mwca_list
     mwca_eps       => pairlist%tis_mwca_eps
     mwca_D         => pairlist%tis_mwca_D
     num_mwca       = 0
@@ -637,29 +637,27 @@ contains
     ! calculate energy and gradient
     !
     !$omp parallel default(none)                                    &
-    !$omp firstprivate(num_mwca)                                    & 
-    !$omp private(ini_mwca, fin_mwca, i, k, j, l, dij, for, dist,   &
-    !$omp         D, eps, dr, adr2, adr4, adr8, dv_dr, id, nthread) &
-    !$omp shared(natom, num_mwca_calc, mwca_calc_list,              &
+    !$omp firstprivate(num_mwca)                                    &
+    !$omp private(ini_mwca, fin_mwca, i, k, j, l, dij, grad, dist,  &
+    !$omp         D, eps, dr, adr2, adr4, adr8, dv_dr, id)          &
+    !$omp shared(natom, num_mwca_calc, mwca_list,                   &
     !$omp        mwca_eps, mwca_D, coord, force, a, a2)             &
     !$omp reduction(+:virial) reduction(+:enemwca)
     !
 #ifdef OMP
     id      = omp_get_thread_num() + 1
-    nthread = omp_get_num_threads()
 #else
     id      = 1
-    nthread = 1
 #endif
     do i = 1, natom-1
 
       ini_mwca = num_mwca + 1
-      fin_mwca = num_mwca + num_mwca_calc(i,id)
+      fin_mwca = num_mwca + num_mwca_calc(i, id)
       num_mwca = fin_mwca
 
       do k = ini_mwca, fin_mwca
 
-        j = mwca_calc_list(k,id)
+        j = mwca_list(k,id)
         D = mwca_D(k, id)
 
         ! compute distance
@@ -683,9 +681,9 @@ contains
           dv_dr = 50.0_wp
         end if
 
-        for(1:3) = dv_dr * dij(1:3)
-        force(1:3,i,id) = force(1:3,i,id) + for(1:3)
-        force(1:3,j,id) = force(1:3,j,id) - for(1:3)
+        grad(1:3) = dv_dr * dij(1:3)
+        force(1:3,i,id) = force(1:3,i,id) + grad(1:3)
+        force(1:3,j,id) = force(1:3,j,id) - grad(1:3)
 
         !if (dist > d_inf) then
         enemwca = enemwca + eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
@@ -693,8 +691,8 @@ contains
         !print *, 'dv_dr', dv_dr
         !print *, 'coord(i)', coord(1:3, i)
         !print *, 'coord(j)', coord(1:3, j)
-        !print *, 'force(i)', for(1:3)
-        !print *, 'force(j)', -for(1:3)
+        !print *, 'force(i)', grad(1:3)
+        !print *, 'force(j)', -grad(1:3)
         !flush(6)
         !else
         !  enemwca = enemwca + 1.0e10_wp ! High energy (to reject in Widom method)
@@ -717,5 +715,202 @@ contains
     return
 
   end subroutine compute_energy_tis_mwca
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    compute_energy_tis_mwca_pbc
+  !> @brief        calculate mWCA energy with pairlist (PBC)
+  !! @authors      NH (with reference to compute_energy_general_exv_AICG2P_pbc)
+  !! @param[in]    enefunc  : potential energy functions information
+  !! @param[in]    boundary : information of boundary condition
+  !! @param[in]    pairlist : pairlist information
+  !! @param[in]    coord    : coordinates of target systems
+  !! @param[inout] force    : forces of target systems
+  !! @param[inout] virial   : virial of target systems
+  !! @param[inout] enemwca  : mWCA energy of target systems
+  !! @note         TIS modified Weeks-Chandler-Andersen potential
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
+                                     coord, force, virial, enemwca)
+
+    ! formal arguments
+    type(s_enefunc),  target, intent(in)    :: enefunc
+    type(s_boundary), target, intent(in)    :: boundary
+    type(s_pairlist), target, intent(in)    :: pairlist
+    real(wp),                 intent(in)    :: coord(:,:)
+    real(wp),                 intent(inout) :: force(:,:,:)
+    real(wp),                 intent(inout) :: virial(3,3)
+    real(wp),                 intent(inout) :: enemwca
+
+    ! local variables
+    real(wp)                  :: a, a2, dij(3), dist
+    real(wp)                  :: bsize(3), coord_i(3), force_tmp(3)
+    real(wp)                  :: dr, adr2, adr4, adr8
+    real(wp)                  :: grad(3), dv_dr, eps, D
+    real(wp)                  :: ene_omp(nthread), ene_omp_tmp
+    integer                   :: i, j, k, l, natom, id
+    integer                   :: i1, i2, i3, k1
+    integer                   :: num_mwca, ini_mwca, fin_mwca
+    integer                   :: omp_get_thread_num
+
+    integer, pointer          :: num_mwca_calc(:,:), mwca_list(:,:)
+    real(wp), pointer         :: mwca_D(:,:), mwca_eps(:,:)
+
+    call timer(TimerNonBond, TimerOn)
+    call timer(TimerTISmWCA, TimerOn)
+
+    natom          = size(coord(1,:))
+    num_mwca_calc  => pairlist%num_tis_mwca_calc
+    mwca_list      => pairlist%tis_mwca_list
+    mwca_eps       => pairlist%tis_mwca_eps
+    mwca_D         => pairlist%tis_mwca_D
+
+    bsize(1)       =  boundary%box_size_x
+    bsize(2)       =  boundary%box_size_y
+    bsize(3)       =  boundary%box_size_z
+
+    num_mwca       = 0
+    ene_omp(1:nthread) = 0.0_wp
+
+    a = enefunc%tis_mwca_a
+    a2 = a*a
+
+    ! calculate energy and gradient
+    !
+    !$omp parallel default(none)                                    &
+    !$omp firstprivate(num_mwca)                                    & 
+    !$omp private(ini_mwca, fin_mwca, i, k, j, l, dij, grad, dist,  &
+    !$omp         i1, i2, i3, k1,                                   &
+    !$omp         D, eps, dr, adr2, adr4, adr8, dv_dr, id,          &
+    !$omp         ene_omp_tmp, coord_i, force_tmp)                  &
+    !$omp shared(natom, num_mwca_calc, mwca_list, bsize,            &
+    !$omp        mwca_eps, mwca_D, coord, force, a, a2, ene_omp)
+    !
+#ifdef OMP
+    id      = omp_get_thread_num() + 1
+#else
+    id      = 1
+#endif
+    do i = 1, natom-1
+
+      !proceed = .false.
+
+      ini_mwca = num_mwca + 1
+      fin_mwca = num_mwca + num_mwca_calc(i, id)
+      num_mwca = fin_mwca
+
+      !if (fin_mwca >= ini_mwca) proceed = .true.
+      !if (proceed) then
+      if (fin_mwca >= ini_mwca) then
+
+        coord_i(1:3)        = coord(1:3, i)
+        force_tmp(1:3)      = 0.0_wp
+        !virial_tmp(1:3,1:3) = 0.0_wp
+        ene_omp_tmp         = 0.0_wp
+
+        do k = ini_mwca, fin_mwca
+
+          D  = mwca_D(k, id)
+          k1 = mwca_list(k, id)
+          j  = k1 / 27
+          k1 = k1 - j*27
+          i3 = k1 / 9
+          k1 = k1 - i3*9
+          i2 = k1 / 3
+          i1 = k1 - i2*3
+          i1 = i1 - 1
+          i2 = i2 - 1
+          i3 = i3 - 1
+
+          ! compute distance
+          dij(1)  = coord_i(1) - coord(1,j) + bsize(1)*real(i1,wp)
+          dij(2)  = coord_i(2) - coord(2,j) + bsize(2)*real(i2,wp)
+          dij(3)  = coord_i(3) - coord(3,j) + bsize(3)*real(i3,wp)
+          !dij(1:3) = coord(1:3,i) - coord(1:3,j)
+          dist = norm2(dij)
+
+          ! cutoff
+          !
+          if (dist >= D) cycle
+
+          eps = mwca_eps(k, id)
+
+          dr = dist + a - D
+          adr2 = a2 / (dr*dr)
+          adr4 = adr2 * adr2
+          adr8 = adr4 * adr4
+
+          dv_dr = abs(12.0e0_wp * eps * (adr2*adr4*adr8 - adr8) * dr / a2 / dist)
+
+          if (dv_dr > 50.0_wp) then
+            dv_dr = 50.0_wp
+          end if
+
+          grad(1:3) = dv_dr * dij(1:3)
+          !force(1:3,i,id) = force(1:3,i,id) + for(1:3)
+          !force(1:3,j,id) = force(1:3,j,id) - for(1:3)
+
+          !if (dist > d_inf) then
+          ene_omp_tmp = ene_omp_tmp + eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
+          !print *, 'i, j, dist, D, a, eps, ene', i, j, dist, D, a, eps, eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
+          !print *, 'dv_dr', dv_dr
+          !print *, 'coord(i)', coord_i(1:3)
+          !print *, 'coord(j)', coord(1:3, j)
+          !print *, 'force(i)', grad(1:3)
+          !print *, 'force(j)', -grad(1:3)
+          !flush(6)
+          !else
+          !  enemwca = enemwca + 1.0e10_wp ! High energy (to reject in Widom method)
+          !endif
+
+          ! virial
+          !
+          !do l = 1, 3
+          !  virial(1:3,l) = virial(1:3,l) - dij(1:3)*work(l)
+          !end do
+
+          ! store force
+          !
+          force_tmp(1) = force_tmp(1) + grad(1)
+          force_tmp(2) = force_tmp(2) + grad(2)
+          force_tmp(3) = force_tmp(3) + grad(3)
+          force(1,j,id) = force(1,j,id) - grad(1)
+          force(2,j,id) = force(2,j,id) - grad(2)
+          force(3,j,id) = force(3,j,id) - grad(3)
+
+          ! virial
+          !
+          !virial_tmp(1,1) = virial_tmp(1,1) + dij(1)*grad(1)
+          !virial_tmp(2,1) = virial_tmp(2,1) + dij(2)*grad(1)
+          !virial_tmp(3,1) = virial_tmp(3,1) + dij(3)*grad(1)
+          !virial_tmp(1,2) = virial_tmp(1,2) + dij(1)*grad(2)
+          !virial_tmp(2,2) = virial_tmp(2,2) + dij(2)*grad(2)
+          !virial_tmp(3,2) = virial_tmp(3,2) + dij(3)*grad(2)
+          !virial_tmp(1,3) = virial_tmp(1,3) + dij(1)*grad(3)
+          !virial_tmp(2,3) = virial_tmp(2,3) + dij(2)*grad(3)
+          !virial_tmp(3,3) = virial_tmp(3,3) + dij(3)*grad(3)
+        end do
+
+        force(1:3,i,id) = force(1:3,i,id) + force_tmp(1:3)
+        ene_omp(id) = ene_omp(id) + ene_omp_tmp
+        !virial_omp(1:3,1:3,id) = virial_omp(1:3,1:3,id) + virial_tmp(1:3,1:3)
+
+      end if
+    end do
+    !$omp end parallel
+
+    do i = 1, nthread
+      enemwca = enemwca + ene_omp(i)
+      !virial(1:3,1:3) = virial(1:3,1:3) + virial_omp(1:3,1:3,i)
+    end do
+
+    call timer(TimerTISmWCA, TimerOff)
+    call timer(TimerNonBond, TimerOff)
+
+    return
+
+  end subroutine compute_energy_tis_mwca_pbc
 
 end module at_energy_tis_mod

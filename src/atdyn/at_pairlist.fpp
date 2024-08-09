@@ -58,7 +58,7 @@ module at_pairlist_mod
   private :: update_pairlist_solute_water
   private :: update_pairlist_water_water
   private :: check_pairlist_memory_size
-  !private :: update_pairlist_pbc_tis_mwca
+  private :: update_pairlist_pbc_tis_mwca
 
 contains
 
@@ -88,7 +88,7 @@ contains
     ! local variables
     integer                  :: natom, nthread
     integer                  :: n_cg_DNA_base, n_cg_DNA_phos, n_cg_DNA_all
-    integer                  :: n_cg_charged, n_cg_pro_charged
+    integer                  :: n_cg_charged, n_cg_pro_charged, n_cg_TIS
     integer                  :: n_cg_IDR_HPS
     integer                  :: n_cg_IDR_KH
     integer                  :: n_cg_KH
@@ -166,6 +166,7 @@ contains
         n_cg_KH          = enefunc%num_cg_particle_KH
         n_cg_charged     = enefunc%num_cg_particle_charged
         n_cg_pro_charged = enefunc%num_cg_particle_pro_charged
+        n_cg_TIS         = enefunc%num_cg_particle_TIS_all
         n_cg_PWMcos      = enefunc%num_pwmcos_terms
         n_cg_PWMcosns    = enefunc%num_pwmcosns_terms
         n_cg_cells       = boundary%num_cells
@@ -179,6 +180,7 @@ contains
         call alloc_pairlist(pairlist, PairListAtomPbcCGIDRHPS, n_cg_IDR_HPS)
         call alloc_pairlist(pairlist, PairListAtomPbcCGIDRKH, n_cg_IDR_KH)
         call alloc_pairlist(pairlist, PairListAtomPbcCGKH, n_cg_KH)
+        call alloc_pairlist(pairlist, PairListAtomPbcTISmwca, n_cg_TIS)
         call alloc_pairlist(pairlist, PairListCellsPbcCG, n_cg_cells)
       else
         call alloc_pairlist(pairlist, PairListPbcSolute, enefunc%table%num_solute)
@@ -315,9 +317,9 @@ contains
         if (enefunc%cg_KH_calc) then
           call update_pairlist_pbc_cg_KH       (enefunc, boundary, coord_pbc, pairlist)
         end if
-        !if (enefunc%tis_mwca_calc) then
-        !  call update_pairlist_pbc_tis_mwca    (enefunc, boundary, coord_pbc, pairlist)
-        !endif
+        if (enefunc%tis_mwca_calc) then
+          call update_pairlist_pbc_tis_mwca    (enefunc, boundary, coord_pbc, pairlist)
+        endif
       else
         call update_pairlist_solute_solute(enefunc, boundary, coord, pairlist)
         call update_pairlist_solute_water (enefunc, boundary, coord, pairlist)
@@ -2826,7 +2828,7 @@ contains
     integer          :: num_pro_idr_hps
     integer          :: num_pro_idr_kh
     integer          :: num_pro_kh
-    integer          :: num_charged
+    integer          :: num_charged, num_tis
     ! 
     integer          :: i_atom
     integer          :: i_dna, i_base, i_phos
@@ -2854,6 +2856,7 @@ contains
     integer, pointer :: cell_list_IDR_KH(:), cell_head_IDR_KH(:)
     integer, pointer :: cell_list_KH(:), cell_head_KH(:)
     integer, pointer :: cell_list_charged(:), cell_head_charged(:)
+    integer, pointer :: cell_list_TIS(:), cell_head_TIS(:)
     ! 
     integer          :: nthread
 #ifdef OMP
@@ -2869,6 +2872,7 @@ contains
     num_pro_idr_kh     = enefunc%num_cg_particle_IDR_KH 
     num_pro_kh         = enefunc%num_cg_particle_KH 
     num_charged        = enefunc%num_cg_particle_charged
+    num_tis            = enefunc%num_cg_particle_TIS_all
 
     num_cell_all       = boundary%num_cells
     num_cell(1)        = boundary%num_cells_x
@@ -2902,6 +2906,8 @@ contains
     cell_head_KH       => pairlist%cell_head_index_cg_KH
     cell_list_charged  => pairlist%cell_linked_list_cg_charged
     cell_head_charged  => pairlist%cell_head_index_cg_charged
+    cell_list_TIS      => pairlist%cell_linked_list_tis_mwca
+    cell_head_TIS      => pairlist%cell_head_index_tis_mwca
 
 #ifdef OMP
     nthread = omp_get_max_threads()
@@ -3032,6 +3038,17 @@ contains
       cell_head_charged(icell_index) = i_charged
     end do
 
+    ! ==================================
+    ! Make cell linked list for TIS mWCA
+    ! ==================================
+    !
+    cell_head_TIS(1:num_cell_all) = 0
+    do i_charged = 1, num_tis
+      i_atom = enefunc%cg_particle_TIS_all(i_charged)
+      icell_index = icell_atom(i_atom)
+      cell_list_TIS(i_charged) = cell_head_TIS(icell_index)
+      cell_head_TIS(icell_index) = i_charged
+    end do
 
     return
 
@@ -3091,6 +3108,8 @@ contains
     logical          :: is_idr_j
     logical          :: i_is_RNA
     logical          :: j_is_RNA
+    logical          :: i_is_TIS
+    logical          :: j_is_TIS
     ! 
     integer          :: id, my_id, nthread
 #ifdef OMP
@@ -3119,7 +3138,6 @@ contains
 #else
     nthread = 1
 #endif
-
 
     pairlist%num_cg_exv_calc(1:num_atom,1:nthread) = 0
 
@@ -3186,8 +3204,13 @@ contains
               (i_base_type == NABaseTypeRBG) .or. (i_base_type == NABaseTypeRBU) .or. &
               (i_base_type == NABaseTypeRP) .or. (i_base_type == NABaseTypeRS)) then
             i_is_RNA = .true.
+          else if ((i_base_type == NABaseTypeTRBA) .or. (i_base_type == NABaseTypeTRBC) .or. &
+                   (i_base_type == NABaseTypeTRBG) .or. (i_base_type == NABaseTypeTRBU) .or. &
+                   (i_base_type == NABaseTypeTRP)  .or. (i_base_type == NABaseTypeTRS)) then
+            i_is_TIS = .true.
           else
             i_is_RNA = .false.
+            i_is_TIS = .false.
           end if
 
           do i_nbcell = 1, boundary%num_neighbor_cells_CG_exv
@@ -3224,11 +3247,17 @@ contains
                     (j_base_type == NABaseTypeRBG) .or. (j_base_type == NABaseTypeRBU) .or. &
                     (j_base_type == NABaseTypeRP) .or. (j_base_type == NABaseTypeRS)) then
                   j_is_RNA = .true.
+                else if ((j_base_type == NABaseTypeTRBA) .or. (j_base_type == NABaseTypeTRBC) .or. &
+                         (j_base_type == NABaseTypeTRBG) .or. (j_base_type == NABaseTypeTRBU) .or. &
+                         (j_base_type == NABaseTypeTRP)  .or. (j_base_type == NABaseTypeTRS)) then
+                  j_is_TIS = .true.
                 else
                   j_is_RNA = .false.
+                  j_is_TIS = .false.
                 end if
               end if
 
+              ! 
               ! exclude IDR-IDR interactions
               ! 
               if (enefunc%cg_IDR_HPS_is_IDR(j_atom) .or. &
@@ -3262,6 +3291,14 @@ contains
                 end if
               end if
 
+              !
+              ! exclude TIS-TIS interaction
+              ! 
+              if (i_is_TIS .and. j_is_TIS) then
+                j_atom = cell_list_all(j_atom)
+                cycle
+              end if
+
               do_calc = .true.
               ! 
               ! exclude interactions in exclusion list
@@ -3281,11 +3318,6 @@ contains
               !     write(*,*) 'RNA-RNA interaction is included in exv', i_atom, j_atom
               !   end if
               ! end if
-
-              if (.not. do_calc) then
-                j_atom = cell_list_all(j_atom)
-                cycle
-              end if
 
               if (.not. do_calc) then
                 j_atom = cell_list_all(j_atom)
@@ -5179,6 +5211,295 @@ contains
     return
 
   end subroutine update_pairlist_pbc_cg_pwmcosns
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    update_pairlist_pbc_tis_mwca
+  !> @brief        update pairlist for CG electrostatics
+  !! @authors      NH
+  !! @param[in]    enefunc   : potential energy functions information
+  !! @param[in]    boundary  : boundary conditions information
+  !! @param[in]    coord_pbc : coordinates
+  !! @param[inout] pairlist  : pairlist information
+  !
+  ! (ref. update_pairlist_pbc_cg_ele)
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine update_pairlist_pbc_tis_mwca(enefunc, boundary, coord_pbc, pairlist)
+
+    ! formal arguments
+    type(s_enefunc),  target, intent(in)    :: enefunc
+    type(s_boundary), target, intent(in)    :: boundary
+    real(wp),                 intent(in)    :: coord_pbc(:,:)
+    type(s_pairlist), target, intent(inout) :: pairlist
+
+    ! local variables
+    integer          :: n_tis
+    integer          :: i, j, k, n, nloops
+    integer          :: id, my_id, nthread
+    integer          :: i_tis, j_tis
+    integer          :: i_atom, j_atom
+    integer          :: i_cell, j_cell
+    integer          :: i_nbcell
+    integer          :: i_base_type, j_base_type
+    integer          :: pbc_int
+    integer          :: ini_excl, fin_excl
+    integer          :: num_mwca_max
+
+    real(wp)         :: dij(1:3)
+    real(wp)         :: dij_pbc(1:3)
+    real(wp)         :: rij_sqr
+    real(wp)         :: pairdist_mwca_sqr
+    real(wp)         :: box_size(1:3)
+
+    integer, pointer :: tis_list(:)
+    integer, pointer :: icell_atom(:)
+    integer, pointer :: cell_list_mwca(:), cell_head_mwca(:)
+    integer, pointer :: num_mwca_pre(:), num_mwca(:)
+
+    logical          :: do_allocate
+    logical          :: do_calc
+
+#ifdef OMP
+    integer          :: omp_get_max_threads, omp_get_thread_num
+#endif
+
+    n_tis              = enefunc%num_cg_particle_TIS_all
+
+    box_size(1)        = boundary%box_size_x
+    box_size(2)        = boundary%box_size_y
+    box_size(3)        = boundary%box_size_z
+
+    pairdist_mwca_sqr  = pairlist%tis_pairlistdist_mwca ** 2
+
+    icell_atom         => pairlist%cell_index_cg_all
+    cell_list_mwca     => pairlist%cell_linked_list_tis_mwca
+    cell_head_mwca     => pairlist%cell_head_index_tis_mwca
+    num_mwca_pre       => pairlist%num_tis_mwca_pre
+    num_mwca           => pairlist%num_tis_mwca
+    tis_list           => enefunc%cg_particle_TIS_all
+
+#ifdef OMP
+    nthread = omp_get_max_threads()
+#else
+    nthread = 1
+#endif
+
+    pairlist%num_tis_mwca_calc(1:n_tis,1:nthread) = 0
+
+    if (pairlist%allocate_pbc_tis_mwca) then
+      nloops      = 2
+      do_allocate = .true.
+    else
+      nloops      = 1
+      do_allocate = .false.
+    end if
+
+    do n = 1, nloops
+
+      num_mwca(1:nthread) = 0
+
+      if (.not. do_allocate) num_mwca_pre(1:nthread) = 0
+
+      !$omp parallel                                        &
+      !$omp private(id, my_id, i, j, k, i_tis, j_tis,        &
+      !$omp         i_atom, j_atom, i_cell, j_cell, i_nbcell,&
+      !$omp         i_base_type, j_base_type,                &
+      !$omp         do_calc, ini_excl, fin_excl,             &
+      !$omp         dij, dij_pbc, rij_sqr, pbc_int)          &
+      !$omp shared(n_tis, box_size, pairdist_mwca_sqr,       &
+      !$omp        icell_atom, cell_list_mwca, cell_head_mwca, &
+      !$omp        num_mwca_pre, num_mwca, tis_list,         &
+      !$omp        nthread, do_allocate, my_city_rank,       &
+      !$omp        nproc_city, enefunc, boundary, coord_pbc, &
+      !$omp        pairlist)
+      !
+#ifdef OMP
+      id = omp_get_thread_num()
+#else
+      id = 0
+#endif
+      my_id = my_city_rank * nthread + id
+      id    = id + 1
+
+      do i_tis = 1, n_tis - 1
+
+        if (mod(i_tis - 1, nproc_city * nthread) == my_id) then
+
+          i_atom      = tis_list(i_tis)
+          i_cell      = icell_atom(i_atom)
+          i_base_type = enefunc%NA_base_type(i_atom)
+
+          do i_nbcell = 1, boundary%num_neighbor_cells_CG_mwca
+
+            j_cell = boundary%neighbor_cells_CG_mwca(i_nbcell, i_cell)
+            j_tis  = cell_head_mwca(j_cell)
+
+            do while (j_tis > i_tis)
+
+              j_atom = tis_list(j_tis)
+
+              j_base_type = enefunc%NA_base_type(j_atom)
+
+              do_calc = .true.
+              !
+              ! exclusion list
+              ini_excl = enefunc%cg_istart_nonb_excl(i_atom)
+              fin_excl = ini_excl + enefunc%num_nonb_excl(i_atom) - 1
+              do k = ini_excl, fin_excl
+                if (j_atom == enefunc%nonb_excl_list(k)) then
+                  do_calc = .false.
+                  exit
+                end if
+              end do
+              !
+              if (.not. do_calc) then
+                j_tis = cell_list_mwca(j_tis)
+                cycle
+              end if
+
+              !
+              ! distance within pairlistdist?
+              !
+              dij(1:3)     = coord_pbc(1:3,j_atom) - coord_pbc(1:3,i_atom)
+              call check_pbc(box_size, dij, pbc_int)
+              rij_sqr      = dij(1) * dij(1) + dij(2) * dij(2) + dij(3) * dij(3)
+
+              ! --------------------
+              ! core: count and fill
+              ! --------------------
+              !
+              if (rij_sqr < pairdist_mwca_sqr) then
+
+                num_mwca(id) = num_mwca(id) + 1
+
+                if (.not. do_allocate) then
+                  pairlist%tis_mwca_list(num_mwca(id), id) = pbc_int + 27*j_atom
+                  pairlist%tis_mwca_eps(num_mwca(id), id) = 0.2_wp
+
+                  ! B-B
+                  if ((i_base_type >= NABaseTypeTRBA .and. i_base_type <= NABaseTypeTRBU) .and. &
+                      (j_base_type >= NABaseTypeTRBA .and. j_base_type <= NABaseTypeTRBU)) then
+                    pairlist%tis_mwca_D(num_mwca(id), id) = 3.2_wp
+
+                  else if (i_base_type == NABaseTypeTRBA) then
+                    ! A-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.410_wp
+                    ! A-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.130_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRBC) then
+                    ! C-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    ! C-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRBG) then
+                    ! G-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.590_wp
+                    ! G-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.310_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRBU) then
+                    ! U-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    ! U-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRP) then
+                    ! P-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 3.780_wp
+                    ! P-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.500_wp
+                    ! P-A
+                    else if (j_base_type == NABaseTypeTRBA) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.410_wp
+                    ! P-C
+                    else if (j_base_type == NABaseTypeTRBC) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    ! P-G
+                    else if (j_base_type == NABaseTypeTRBG) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.590_wp
+                    ! P-U
+                    else if (j_base_type == NABaseTypeTRBU) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.320_wp
+                    end if
+
+                  else if (i_base_type == NABaseTypeTRS) then
+                    ! S-P
+                    if (j_base_type == NABaseTypeTRP) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 4.500_wp
+                    ! S-S
+                    else if (j_base_type == NABaseTypeTRS) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.220_wp
+                    ! S-A
+                    else if (j_base_type == NABaseTypeTRBA) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.130_wp
+                    ! S-C
+                    else if (j_base_type == NABaseTypeTRBC) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    ! S-G
+                    else if (j_base_type == NABaseTypeTRBG) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.310_wp
+                    ! S-U
+                    else if (j_base_type == NABaseTypeTRBU) then
+                      pairlist%tis_mwca_D(num_mwca(id), id) = 5.040_wp
+                    end if
+                  end if
+
+                end if
+              end if
+
+              j_tis = cell_list_mwca(j_tis)
+            end do              ! j_atom
+          end do                ! i_nbcell
+        end if                  ! compute on the current thread
+
+        if (.not. do_allocate) then
+          pairlist%num_tis_mwca_calc(i_tis,id) = num_mwca(id) - num_mwca_pre(id)
+          num_mwca_pre(id) = num_mwca(id)
+        end if
+
+      end do                    ! do i_tis = 1, n_tis - 1
+      !$omp end parallel
+
+      ! allocate memory of pairlist
+      !
+      if (do_allocate) then
+        num_mwca_max = max(1, maxval(num_mwca(1:nthread)))
+        num_mwca_max = int(real(num_mwca_max,wp) * FactNumNb15)
+
+        call alloc_pairlist(pairlist, PairListPbcTISmwca, num_mwca_max)
+
+        pairlist%num_tis_mwca_max = num_mwca_max
+
+        do_allocate = .false.
+      end if
+
+    end do                      ! nloops
+
+    ! check memory size
+    !
+    call check_pairlist_memory_size(num_mwca, pairlist%num_tis_mwca_max, &
+                                    pairlist%allocate_pbc_tis_mwca)
+
+    return
+
+  end subroutine update_pairlist_pbc_tis_mwca
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !
