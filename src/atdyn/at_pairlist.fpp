@@ -722,6 +722,7 @@ contains
     real(wp)                 :: pairdist2_mwca
     real(wp)                 :: pairdist_longest
     real(wp)                 :: dij(1:3), rij2
+    real(wp)                 :: n_TIS_sep
     integer                  :: i, j, k, natom, n, nloops
     integer                  :: num_excl, ini_excl, fin_excl
     integer                  :: num_nb14, ini_nb14, fin_nb14
@@ -744,6 +745,11 @@ contains
     logical                  :: i_is_DNA, j_is_DNA
     logical                  :: i_is_RNA, j_is_RNA
     logical                  :: i_is_TIS, j_is_TIS
+    logical                  :: i_is_TIS_phos, j_is_TIS_phos
+    logical                  :: TIS_phos_pair, TIS_pair
+    logical                  :: i_is_TIS_base, j_is_TIS_base
+    logical                  :: i_is_TIS_sugar, j_is_TIS_sugar
+    logical                  :: TIS_exclusion
     logical                  :: ij_is_KH_pair
     logical                  :: need_reallocate_1
     logical                  :: need_reallocate_2
@@ -877,6 +883,13 @@ contains
           i_is_TIS    = i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
                         i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
                         i_base_type == NABaseTypeTRP  .or. i_base_type == NABaseTypeTRS
+          
+          i_is_TIS_base = i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
+                          i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU
+
+          i_is_TIS_sugar = i_base_type == NABaseTypeTRS
+
+          i_is_TIS_phos = i_base_type == NABaseTypeTRP
 
           do j = i + 1, natom
 
@@ -887,20 +900,6 @@ contains
             if (rij2 > pairdist2_longest) then
               cycle
             end if
-
-            ! ----------------------------------
-            ! remove particles in exclusion list
-            ! ----------------------------------
-            ! 
-            nb15_calc = .true.
-            !
-            do k = ini_excl, fin_excl
-              if (j == enefunc%nonb_excl_list(k)) then
-                nb15_calc = .false.
-                exit
-              end if
-            end do
-            if (.not. nb15_calc) cycle
 
             j_base_type = enefunc%NA_base_type(j)
             j_chain_id  = enefunc%mol_chain_id(j)
@@ -914,6 +913,40 @@ contains
             j_is_TIS = j_base_type == NABaseTypeTRBA .or. j_base_type == NABaseTypeTRBC .or. &
                        j_base_type == NABaseTypeTRBG .or. j_base_type == NABaseTypeTRBU .or. &
                        j_base_type == NABaseTypeTRP  .or. j_base_type == NABaseTypeTRS
+
+            j_is_TIS_sugar = j_base_type == NABaseTypeTRS
+
+            j_is_TIS_phos = j_base_type == NABaseTypeTRP
+
+            j_is_TIS_base = j_base_type == NABaseTypeTRBA .or. j_base_type == NABaseTypeTRBC .or. &
+                            j_base_type == NABaseTypeTRBG .or. j_base_type == NABaseTypeTRBU
+
+            TIS_phos_pair = .false.
+            if (i_is_TIS_phos .and. j_is_TIS_phos) then
+              TIS_phos_pair = .true.
+            end if
+
+            TIS_pair = .false.
+            if (i_is_TIS .and. j_is_TIS) then
+              TIS_pair = .true.
+            end if
+            
+            ! ----------------------------------
+            ! remove particles in exclusion list
+            ! ----------------------------------
+            ! 
+            nb15_calc = .true.
+            ! 
+            if (.not. TIS_pair) then
+              do k = ini_excl, fin_excl
+                if (j == enefunc%nonb_excl_list(k)) then
+                  nb15_calc = .false.
+                  exit
+                end if
+              end do
+            end if
+            if (.not. nb15_calc) cycle
+
 
             ! ----------------------------
             ! test if i and j are KH-pairs
@@ -940,6 +973,8 @@ contains
                 ! go to DNA-DNA and do nothing here
               else if (i_is_idr .and. j_is_idr) then
                 ! go to idr-idr and do nothing here
+              else if (i_is_TIS .and. j_is_TIS) then
+                ! go to wca and do nothing here
                 if ((i_is_RNA .and. j_is_RNA) .and. &
                     (i_chain_id == j_chain_id)) then
                     num_exv(id) = num_exv(id) + 1
@@ -1036,6 +1071,33 @@ contains
             ! TIS mwca
             ! =============
             !
+            ! manual TIS exv exclusion - appears to give the same result as original code
+            TIS_exclusion = .false.
+            if (i_chain_id == j_chain_id) then 
+              if (i_is_TIS .and. j_is_TIS) then
+
+                 if (i_is_TIS_phos) then
+                    n_TIS_sep = 4
+ 
+                 else if (i_is_TIS_sugar) then
+                    n_TIS_sep = 4
+ 
+                 else if (i_is_TIS_base) then
+                    n_TIS_sep = 2
+                 
+                 else
+                    n_TIS_sep = -1
+                 end if
+              end if
+              
+              if (j < i + n_TIS_sep) then
+                TIS_exclusion = .true.
+              end if
+
+            end if
+
+            if (TIS_exclusion) cycle
+                
             if (rij2 < pairdist2_mwca) then
               if (i_is_TIS .and. j_is_TIS) then
                 num_mwca(id) = num_mwca(id) + 1
@@ -3350,6 +3412,9 @@ contains
     logical          :: is_phos_j
     logical          :: is_pro_i
     logical          :: is_pro_j
+    logical          :: is_tis_phos_i
+    logical          :: is_tis_phos_j
+    logical          :: tis_pair
     ! 
     integer          :: id, my_id, nthread
 #ifdef OMP
@@ -3434,6 +3499,8 @@ contains
             is_phos_i = .true.
           else if (i_base_type == NABaseTypeProtein) then
             is_pro_i  = .true.
+          else if (i_base_type == NABaseTypeTRP) then
+            is_tis_phos_i = .true.
           end if
 
           do i_nbcell = 1, boundary%num_neighbor_cells_CG_ele
@@ -3456,6 +3523,14 @@ contains
                 is_phos_j = .true.
               else if (j_base_type == NABaseTypeProtein) then
                 is_pro_j  = .true.
+              else if (j_base_type == NABaseTypeTRP) then
+                is_tis_phos_j = .true.
+              end if
+
+              if (is_tis_phos_i .and. is_tis_phos_j) then
+                tis_pair = .true.
+              else
+                tis_pair = .false.
               end if
 
               ! 
@@ -3471,12 +3546,14 @@ contains
               ! exclusion list
               ini_excl = enefunc%cg_istart_nonb_excl(i_atom)
               fin_excl = ini_excl + enefunc%num_nonb_excl(i_atom) - 1
-              do k = ini_excl, fin_excl
-                if (j_atom == enefunc%nonb_excl_list(k)) then
-                  do_calc = .false.
-                  exit
-                end if
-              end do
+              if (.not. tis_pair) then ! There are no exclusion rules for TIS electrostatics
+                do k = ini_excl, fin_excl
+                  if (j_atom == enefunc%nonb_excl_list(k)) then
+                    do_calc = .false.
+                    exit
+                  end if
+                end do
+              end if
               !
               if (.not. do_calc) then
                 j_charge = cell_list_charged(j_charge)

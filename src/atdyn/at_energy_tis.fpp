@@ -830,7 +830,6 @@ contains
 
           D = mwca_D(atomtype(i), atomtype(j))
 
-
           ! compute distance
           dij(1)  = coord_i(1) - coord(1,j) + bsize(1)*real(i1,wp)
           dij(2)  = coord_i(2) - coord(2,j) + bsize(2)*real(i2,wp)

@@ -3472,6 +3472,21 @@ contains
                    stat = dealloc_stat)
       endif
 
+    case (EneFuncTISmwca)
+
+      if (allocated(enefunc%tis_mwca_mol_pair)) then
+        deallocate(enefunc%tis_mwca_mol_pair, &
+                   stat = dealloc_stat)
+      endif 
+
+    case (EneFuncTISmwcaType)
+
+      if (allocated(enefunc%tis_mwca_D)) then
+        deallocate(enefunc%tis_mwca_D,   &
+                   enefunc%tis_mwca_eps, &
+                   stat = dealloc_stat)
+      endif
+
     case default
 
       call error_msg('Dealloc_Enefunc> bad variable')
@@ -3554,6 +3569,8 @@ contains
     call dealloc_enefunc(enefunc, EneFuncCGIDRHPS)
     call dealloc_enefunc(enefunc, EneFuncCGIDRKH)
     call dealloc_enefunc(enefunc, EneFuncTISLocalStack)
+    call dealloc_enefunc(enefunc, EneFuncTISmwca)
+    call dealloc_enefunc(enefunc, EneFuncTISmwcaType)
 
     return
 

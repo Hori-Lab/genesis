@@ -1701,7 +1701,9 @@ contains
     integer              :: i, j, k
     integer              :: alloc_stat
 
-    real(wp)             :: reduced_charge, kboltz_unit, length_per_unit, eps
+    real(wp)             :: lb, kboltz_unit, length_per_unit, eps, Tc, ek
+    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.4008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
 
     ! --------------------
     ! electrostatic params
@@ -1748,14 +1750,20 @@ contains
     enefunc%cg_charge(1:n_atoms)   = molecule%charge(1:n_atoms)
 
     ! Adjust charge of RNA phosphate based on counterion condensation
+    Tc = sol_T - 273.15e0_wp
+    ek =  MM_A + MM_B*Tc + MM_C*Tc*Tc + MM_D*Tc*Tc*Tc
+
     kboltz_unit = (KBOLTZ * (CAL2JOU*1000.0_wp)) / AVOGADRO  
     length_per_unit = 4.38178046_wp
-    eps = (ELECTRIC_CONST * enefunc%cg_dielec_const)
-    reduced_charge = ELEMENT_CHARGE**2 / &
+
+    eps = (ELECTRIC_CONST * ek)
+    
+    lb = ELEMENT_CHARGE**2 / &
     (4.0_wp * PI * eps * kboltz_unit * sol_T) * 1e+10_wp
+
     do i = 1, n_atoms
       if (enefunc%NA_base_type(i) == NABaseTypeTRP) then
-        enefunc%cg_charge(i) = - (length_per_unit / reduced_charge)
+        enefunc%cg_charge(i) = - (length_per_unit / lb)
       end if
     end do
 
