@@ -743,7 +743,6 @@ contains
     logical                  :: is_nonlocal, is_WC_bp
     logical                  :: i_is_idr, j_is_idr
     logical                  :: i_is_DNA, j_is_DNA
-    logical                  :: i_is_RNA, j_is_RNA
     logical                  :: i_is_TIS, j_is_TIS
     logical                  :: i_is_TIS_phos, j_is_TIS_phos
     logical                  :: TIS_phos_pair, TIS_pair
@@ -846,7 +845,6 @@ contains
       !$omp         i_chain_id, j_chain_id,              &
       !$omp         i_is_idr, j_is_idr,                  &
       !$omp         i_is_DNA, j_is_DNA,                  &
-      !$omp         i_is_RNA, j_is_RNA,                  &
       !$omp         i_is_TIS, j_is_TIS,                  &
       !$omp         ij_is_KH_pair,                       &
       !$omp         i_base_type, j_base_type)            &
@@ -875,10 +873,6 @@ contains
           i_chain_id  = enefunc%mol_chain_id(i)
           i_is_idr    = enefunc%cg_IDR_HPS_is_IDR(i) .or. enefunc%cg_IDR_KH_is_IDR(i)
           i_is_DNA    = i_base_type <= NABaseTypeDBMAX .or. i_base_type == NABaseTypeDP .or. i_base_type == NABaseTypeDS
-         
-          i_is_RNA    = i_base_type == NABaseTypeRBA .or. i_base_type == NABaseTypeRBC .or. &
-                        i_base_type == NABaseTypeRBG .or. i_base_type == NABaseTypeRBU .or. &
-                        i_base_type == NABaseTypeRP .or. i_base_type == NABaseTypeRS
 
           i_is_TIS    = i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
                         i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
@@ -905,10 +899,6 @@ contains
             j_chain_id  = enefunc%mol_chain_id(j)
             j_is_idr    = enefunc%cg_IDR_HPS_is_IDR(j) .or. enefunc%cg_IDR_KH_is_IDR(j)
             j_is_DNA    = j_base_type <= NABaseTypeDBMAX .or. j_base_type == NABaseTypeDP .or. j_base_type == NABaseTypeDS
-
-            j_is_RNA = j_base_type == NABaseTypeRBA .or. j_base_type == NABaseTypeRBC .or. &
-                       j_base_type == NABaseTypeRBG .or. j_base_type == NABaseTypeRBU .or. &
-                       j_base_type == NABaseTypeRP .or. j_base_type == NABaseTypeRS
 
             j_is_TIS = j_base_type == NABaseTypeTRBA .or. j_base_type == NABaseTypeTRBC .or. &
                        j_base_type == NABaseTypeTRBG .or. j_base_type == NABaseTypeTRBU .or. &
@@ -975,13 +965,6 @@ contains
                 ! go to idr-idr and do nothing here
               else if (i_is_TIS .and. j_is_TIS) then
                 ! go to wca and do nothing here
-                if ((i_is_RNA .and. j_is_RNA) .and. &
-                    (i_chain_id == j_chain_id)) then
-                    num_exv(id) = num_exv(id) + 1
-                  if (.not. do_allocate) then
-                    pairlist%cg_exv_list(num_exv(id), id) = j
-                  end if
-                end if
               else if (ij_is_KH_pair) then
                 ! go to KH-KH and do nothing here
               else
@@ -1580,7 +1563,7 @@ contains
     integer                  :: omp_get_thread_num, omp_get_max_threads
 #endif
     logical                  :: proceed, do_allocate
-    logical                  :: i_is_RNA, j_is_RNA
+    logical                  :: i_is_TIS, j_is_TIS
 
     integer,     pointer     :: num_IDR_HPS_pre(:), num_IDR_HPS(:)
 
@@ -1622,7 +1605,7 @@ contains
       !$omp         i_chain_id,         &
       !$omp         j_chain_id,         &
       !$omp         proceed, dij, rij2, &
-      !$omp         i_is_RNA, j_is_RNA) &
+      !$omp         i_is_TIS, j_is_TIS) &
       !$omp firstprivate(do_allocate)
       !
 #ifdef OMP
@@ -1639,12 +1622,12 @@ contains
         if (mod(i, nproc_city*nthread) /= my_id) proceed = .false.
         if (.not. enefunc%cg_IDR_HPS_is_IDR(i))  proceed = .false.
 
-        i_is_RNA = enefunc%NA_base_type(i) == NABaseTypeRBA .or. &
-                   enefunc%NA_base_type(i) == NABaseTypeRBC .or. &
-                   enefunc%NA_base_type(i) == NABaseTypeRBG .or. &
-                   enefunc%NA_base_type(i) == NABaseTypeRBU .or. &
-                   enefunc%NA_base_type(i) == NABaseTypeRP  .or. &
-                   enefunc%NA_base_type(i) == NABaseTypeRS
+        i_is_TIS    = enefunc%NA_base_type(i) == NABaseTypeTRBA .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTRBC .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTRBG .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTRBU .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTRP  .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTRS
 
         if (proceed) then
 
@@ -1660,18 +1643,17 @@ contains
               cycle
             end if
 
-            j_is_RNA = enefunc%NA_base_type(j) == NABaseTypeRBA .or. &
-                       enefunc%NA_base_type(j) == NABaseTypeRBC .or. &
-                       enefunc%NA_base_type(j) == NABaseTypeRBG .or. &
-                       enefunc%NA_base_type(j) == NABaseTypeRBU .or. &
-                       enefunc%NA_base_type(j) == NABaseTypeRP  .or. &
-                       enefunc%NA_base_type(j) == NABaseTypeRS
-            ! don't include RNA-RNA interactions in HPS within the same chain
-            if ((i_is_RNA .and. j_is_RNA) .and. i_chain_id == j_chain_id) then
-              ! write(*, *) 'RNA-RNA HPS turned off between ', i, j
+            j_is_TIS    = enefunc%NA_base_type(j) == NABaseTypeTRBA .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTRBC .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTRBG .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTRBU .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTRP  .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTRS
+
+            ! don't include TIS-TIS interactions in HPS within the same chain
+            if ((i_is_TIS .and. j_is_TIS) .and. i_chain_id == j_chain_id) then
               cycle
             end if
-            ! max - remove i_chain_id and j_chain_id criteria if no intermolecular RNA-RNA HPS wanted
 
             dij(1:3) = coord(1:3,i) - coord(1:3,j)
             rij2     = dij(1)*dij(1) + dij(2)*dij(2) + dij(3)*dij(3)
@@ -3083,8 +3065,6 @@ contains
     logical          :: is_dna_j
     logical          :: is_idr_i
     logical          :: is_idr_j
-    logical          :: i_is_RNA
-    logical          :: j_is_RNA
     logical          :: i_is_TIS
     logical          :: j_is_TIS
     ! 
@@ -3143,7 +3123,7 @@ contains
       !$omp         dij, dij_pbc, rij_sqr,    &
       !$omp         i_base_type, j_base_type, &
       !$omp         i_chain_id, j_chain_id,   &
-      !$omp         i_is_RNA, j_is_RNA,       &
+      !$omp         i_is_TIS, j_is_TIS,       &
       !$omp         pbc_int)                  &
       !$omp firstprivate(do_allocate)
       !
@@ -3177,16 +3157,11 @@ contains
             is_idr_i = .false.
           end if
           
-          if ((i_base_type == NABaseTypeRBA) .or. (i_base_type == NABaseTypeRBC) .or. &
-              (i_base_type == NABaseTypeRBG) .or. (i_base_type == NABaseTypeRBU) .or. &
-              (i_base_type == NABaseTypeRP) .or. (i_base_type == NABaseTypeRS)) then
-            i_is_RNA = .true.
-          else if ((i_base_type == NABaseTypeTRBA) .or. (i_base_type == NABaseTypeTRBC) .or. &
+          if ((i_base_type == NABaseTypeTRBA) .or. (i_base_type == NABaseTypeTRBC) .or. &
                    (i_base_type == NABaseTypeTRBG) .or. (i_base_type == NABaseTypeTRBU) .or. &
                    (i_base_type == NABaseTypeTRP)  .or. (i_base_type == NABaseTypeTRS)) then
             i_is_TIS = .true.
           else
-            i_is_RNA = .false.
             i_is_TIS = .false.
           end if
 
@@ -3218,18 +3193,13 @@ contains
                 end if
               end if
 
-              if (i_is_RNA) then
-                j_base_type = enefunc%NA_base_type(j_atom)
-                if ((j_base_type == NABaseTypeRBA) .or. (j_base_type == NABaseTypeRBC) .or. &
-                    (j_base_type == NABaseTypeRBG) .or. (j_base_type == NABaseTypeRBU) .or. &
-                    (j_base_type == NABaseTypeRP) .or. (j_base_type == NABaseTypeRS)) then
-                  j_is_RNA = .true.
-                else if ((j_base_type == NABaseTypeTRBA) .or. (j_base_type == NABaseTypeTRBC) .or. &
-                         (j_base_type == NABaseTypeTRBG) .or. (j_base_type == NABaseTypeTRBU) .or. &
-                         (j_base_type == NABaseTypeTRP)  .or. (j_base_type == NABaseTypeTRS)) then
+              if (i_is_TIS) then
+                if ((j_base_type == NABaseTypeTRBA) .or. (j_base_type == NABaseTypeTRBC) .or. &
+                    (j_base_type == NABaseTypeTRBG) .or. (j_base_type == NABaseTypeTRBU) .or. &
+                    (j_base_type == NABaseTypeTRP)  .or. (j_base_type == NABaseTypeTRS)) then
                   j_is_TIS = .true.
                 else
-                  j_is_RNA = .false.
+
                   j_is_TIS = .false.
                 end if
               end if
@@ -3245,12 +3215,8 @@ contains
               end if
 
               if (is_idr_i .and. is_idr_j) then
-                if (i_is_RNA .and. j_is_RNA) then
-                ! do nothing
-                else
-                  j_atom = cell_list_all(j_atom)
-                  cycle
-                end if
+                j_atom = cell_list_all(j_atom)
+                cycle
               end if
 
               !
@@ -3288,13 +3254,6 @@ contains
                   exit
                 end if
               end do
-
-              ! if (i_chain_id == j_chain_id) then
-              !   if (i_is_RNA .and. j_is_RNA) then
-              !     do_calc = .false.
-              !     write(*,*) 'RNA-RNA interaction is included in exv', i_atom, j_atom
-              !   end if
-              ! end if
 
               if (.not. do_calc) then
                 j_atom = cell_list_all(j_atom)
@@ -4152,7 +4111,7 @@ contains
     ! 
     logical          :: do_allocate
     logical          :: do_calc
-    logical          :: i_is_RNA, j_is_RNA
+    logical          :: i_is_TIS, j_is_TIS
     ! 
     integer          :: id, my_id, nthread
 #ifdef OMP
@@ -4209,7 +4168,7 @@ contains
       !$omp         ini_excl, fin_excl,     &
       !$omp         dij, dij_pbc, rij_sqr,  &
       !$omp         i_chain_id, j_chain_id, &
-      !$omp         i_is_RNA, j_is_RNA,     &
+      !$omp         i_is_TIS, j_is_TIS,     &
       !$omp         i_base_type,            &
       !$omp         j_base_type)            &
       !$omp firstprivate(do_allocate)
@@ -4232,12 +4191,12 @@ contains
           i_chain_id = enefunc%mol_chain_id(i_atom)
           i_base_type = enefunc%NA_base_type(i_atom)
 
-          if ((i_base_type == NABaseTypeRBA) .or. (i_base_type == NABaseTypeRBC) .or. &
-              (i_base_type == NABaseTypeRBG) .or. (i_base_type == NABaseTypeRBU) .or. &
-              (i_base_type == NABaseTypeRP) .or. (i_base_type == NABaseTypeRS)) then
-            i_is_RNA = .true.
+          if (i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
+          i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
+          i_base_type == NABaseTypeTRP  .or. i_base_type == NABaseTypeTRS) then
+            i_is_TIS = .true.
           else
-            i_is_RNA = .false.
+            i_is_TIS = .false.
           end if
           
           do i_nbcell = 1, boundary%num_neighbor_cells_CG_126
@@ -4251,12 +4210,12 @@ contains
 
               j_base_type = enefunc%NA_base_type(j_atom)
 
-              if ((j_base_type == NABaseTypeRBA) .or. (j_base_type == NABaseTypeRBC) .or. &
-                  (j_base_type == NABaseTypeRBG) .or. (j_base_type == NABaseTypeRBU) .or. &
-                  (j_base_type == NABaseTypeRP) .or. (j_base_type == NABaseTypeRS)) then
-                j_is_RNA = .true.
+              if (i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
+              i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
+              i_base_type == NABaseTypeTRP  .or. i_base_type == NABaseTypeTRS) then
+                j_is_TIS = .true.
               else
-                j_is_RNA = .false.
+                j_is_TIS = .false.
               end if
 
               !
@@ -4269,10 +4228,10 @@ contains
               if (i_chain_id == j_chain_id .and. i_atom == j_atom - 1) then
                 do_calc = .false.
               end if
-              if ((i_is_RNA .and. j_is_RNA) .and. &
-                  (i_chain_id == j_chain_id)) then ! max - turn off if both RNA belonging to the same chain
+              if ((i_is_TIS .and. j_is_TIS) .and. &
+                  (i_chain_id == j_chain_id)) then ! max - turn off if both TIS belonging to the same chain
                 do_calc = .false.
-                ! write(*,*) 'RNA-RNA HPS turned off between ', i_atom, j_atom
+                ! write(*,*) 'TIS-TIS HPS turned off between ', i_atom, j_atom
               end if
               ! 
               if (.not. do_calc) then
@@ -5344,11 +5303,43 @@ contains
                   exit
                 end if
               end do
-              !
+
               if (.not. do_calc) then
                 j_tis = cell_list_mwca(j_tis)
                 cycle
               end if
+
+              ! TIS_exclusion = .false.
+              ! if (i_chain_id == j_chain_id) then 
+              !   if (i_is_TIS .and. j_is_TIS) then
+
+              !     if (i_is_TIS_phos) then
+              !         n_TIS_sep = 4
+  
+              !     else if (i_is_TIS_sugar) then
+              !         n_TIS_sep = 4
+  
+              !     else if (i_is_TIS_base) then
+              !         n_TIS_sep = 2
+                  
+              !     else
+              !         n_TIS_sep = -1
+              !     end if
+              !   end if
+                
+              !   if (j < i + n_TIS_sep) then
+              !     TIS_exclusion = .true.
+              !   end if
+
+              ! end if
+
+              ! if (TIS_exclusion) cycle
+              !   !
+              !   if (.not. do_calc) then
+              !     j_tis = cell_list_mwca(j_tis)
+              !     cycle
+              !   end if
+ 
 
               !
               ! distance within pairlistdist?
