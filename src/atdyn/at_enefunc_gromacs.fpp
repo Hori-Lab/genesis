@@ -1727,7 +1727,7 @@ contains
         + 5.151e-2_wp * sol_C * sol_C       &
         - 6.889e-3_wp * sol_C * sol_C * sol_C
     ! real calculations moved to compute_energy_CG_ele
-    enefunc%cg_dielec_const = e_T * a_C
+    ! enefunc%cg_dielec_const = e_T * a_C
 
     ! real calculations moved to compute_energy_CG_ele
     enefunc%cg_debye_length = 1.0e10_wp             &
@@ -1752,6 +1752,7 @@ contains
     ! Adjust charge of RNA phosphate based on counterion condensation
     Tc = sol_T - 273.15e0_wp
     ek =  MM_A + MM_B*Tc + MM_C*Tc*Tc + MM_D*Tc*Tc*Tc
+    enefunc%cg_dielec_const = ek
 
     kboltz_unit = (KBOLTZ * (CAL2JOU*1000.0_wp)) / AVOGADRO  
     length_per_unit = 4.38178046_wp
