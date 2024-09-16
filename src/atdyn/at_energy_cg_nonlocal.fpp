@@ -2988,6 +2988,10 @@ contains
     real(wp)          :: ele_tmp_sol_T, ele_tmp_sol_C
     real(wp)          :: grad_coef_ele, grad(3)
     real(wp)          :: e_tmp_ele
+
+    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.4008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
+    real(wp)                  :: Tc
     !
     real(wp)          :: bsize(3), inv_bsize(3)
     real(wp)          :: force_temp(3), factor
@@ -3031,7 +3035,9 @@ contains
     ele_tmp_a_C   = 1.0e0_wp - 2.551e-1_wp * ele_tmp_sol_C  &
         + 5.151e-2_wp * ele_tmp_sol_C * ele_tmp_sol_C       &
         - 6.889e-3_wp * ele_tmp_sol_C * ele_tmp_sol_C * ele_tmp_sol_C
-    diele_const = ele_tmp_e_T * ele_tmp_a_C
+    ! diele_const = ele_tmp_e_T * ele_tmp_a_C
+    Tc = ele_tmp_sol_T - 273.15_wp
+    diele_const =  MM_A + MM_B*Tc + MM_C*Tc*Tc + MM_D*Tc*Tc*Tc
 
     debye_length = 1.0e10_wp                     &
         * sqrt(                                  &
