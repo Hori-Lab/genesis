@@ -180,7 +180,8 @@ contains
         call alloc_pairlist(pairlist, PairListAtomPbcCGIDRHPS, n_cg_IDR_HPS)
         call alloc_pairlist(pairlist, PairListAtomPbcCGIDRKH, n_cg_IDR_KH)
         call alloc_pairlist(pairlist, PairListAtomPbcCGKH, n_cg_KH)
-        call alloc_pairlist(pairlist, PairListAtomPbcTISmwca, n_cg_TIS)
+        ! call alloc_pairlist(pairlist, PairListAtomPbcTISmwca, n_cg_TIS)
+        call alloc_pairlist(pairlist, PairListAtomPbcTISmwca, natom)
         call alloc_pairlist(pairlist, PairListCellsPbcCG, n_cg_cells)
       else
         call alloc_pairlist(pairlist, PairListPbcSolute, enefunc%table%num_solute)
@@ -874,16 +875,16 @@ contains
           i_is_idr    = enefunc%cg_IDR_HPS_is_IDR(i) .or. enefunc%cg_IDR_KH_is_IDR(i)
           i_is_DNA    = i_base_type <= NABaseTypeDBMAX .or. i_base_type == NABaseTypeDP .or. i_base_type == NABaseTypeDS
 
-          i_is_TIS    = i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
-                        i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
-                        i_base_type == NABaseTypeTRP  .or. i_base_type == NABaseTypeTRS
+          i_is_TIS    = i_base_type == NABaseTypeTBA .or. i_base_type == NABaseTypeTBC .or. &
+                        i_base_type == NABaseTypeTBG .or. i_base_type == NABaseTypeTBU .or. &
+                        i_base_type == NABaseTypeTP  .or. i_base_type == NABaseTypeTS
           
-          i_is_TIS_base = i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
-                          i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU
+          i_is_TIS_base = i_base_type == NABaseTypeTBA .or. i_base_type == NABaseTypeTBC .or. &
+                          i_base_type == NABaseTypeTBG .or. i_base_type == NABaseTypeTBU
 
-          i_is_TIS_sugar = i_base_type == NABaseTypeTRS
+          i_is_TIS_sugar = i_base_type == NABaseTypeTS
 
-          i_is_TIS_phos = i_base_type == NABaseTypeTRP
+          i_is_TIS_phos = i_base_type == NABaseTypeTP
 
           do j = i + 1, natom
 
@@ -900,16 +901,16 @@ contains
             j_is_idr    = enefunc%cg_IDR_HPS_is_IDR(j) .or. enefunc%cg_IDR_KH_is_IDR(j)
             j_is_DNA    = j_base_type <= NABaseTypeDBMAX .or. j_base_type == NABaseTypeDP .or. j_base_type == NABaseTypeDS
 
-            j_is_TIS = j_base_type == NABaseTypeTRBA .or. j_base_type == NABaseTypeTRBC .or. &
-                       j_base_type == NABaseTypeTRBG .or. j_base_type == NABaseTypeTRBU .or. &
-                       j_base_type == NABaseTypeTRP  .or. j_base_type == NABaseTypeTRS
+            j_is_TIS = j_base_type == NABaseTypeTBA .or. j_base_type == NABaseTypeTBC .or. &
+                       j_base_type == NABaseTypeTBG .or. j_base_type == NABaseTypeTBU .or. &
+                       j_base_type == NABaseTypeTP  .or. j_base_type == NABaseTypeTS
 
-            j_is_TIS_sugar = j_base_type == NABaseTypeTRS
+            j_is_TIS_sugar = j_base_type == NABaseTypeTS
 
-            j_is_TIS_phos = j_base_type == NABaseTypeTRP
+            j_is_TIS_phos = j_base_type == NABaseTypeTP
 
-            j_is_TIS_base = j_base_type == NABaseTypeTRBA .or. j_base_type == NABaseTypeTRBC .or. &
-                            j_base_type == NABaseTypeTRBG .or. j_base_type == NABaseTypeTRBU
+            j_is_TIS_base = j_base_type == NABaseTypeTBA .or. j_base_type == NABaseTypeTBC .or. &
+                            j_base_type == NABaseTypeTBG .or. j_base_type == NABaseTypeTBU
 
             TIS_phos_pair = .false.
             if (i_is_TIS_phos .and. j_is_TIS_phos) then
@@ -922,12 +923,14 @@ contains
             end if
             
             ! ----------------------------------
-            ! remove particles in exclusion list
+            ! simplest solution to fix different treatment for TIS electrostatics
+            ! exclusion list was to add a flag before running exclusion list check here,
+            ! then run it again without the flag after ele pairlist has been constructed.
             ! ----------------------------------
             ! 
             nb15_calc = .true.
             ! 
-            if (.not. TIS_pair) then
+            if (.not. (i_is_TIS .or. j_is_TIS)) then
               do k = ini_excl, fin_excl
                 if (j == enefunc%nonb_excl_list(k)) then
                   nb15_calc = .false.
@@ -935,6 +938,47 @@ contains
                 end if
               end do
             end if
+            if (.not. nb15_calc) cycle
+
+            ! ===
+            ! ele
+            ! ===
+            if (rij2 < pairdist2_ele) then
+              ! 
+              if (enefunc%cg_ele_mol_pair(i_chain_id, j_chain_id) == 1 .and. &
+                  abs (enefunc%cg_charge(i)) > EPS .and. &
+                  abs (enefunc%cg_charge(j)) > EPS) then
+                ! 
+                num_ele(id) = num_ele(id) + 1
+                if (.not. do_allocate) then
+                  pairlist%cg_ele_list(num_ele(id), id) = j
+                  if ((i_base_type == NABaseTypeDP .and. &
+                      j_base_type > NABaseTypeNAMAX) .or. &
+                      (j_base_type == NABaseTypeDP .and. &
+                      i_base_type > NABaseTypeNAMAX)) then
+                    pairlist%cg_ele_scaling_list(num_ele(id), id) = &
+                        - enefunc%cg_pro_DNA_ele_scale_Q / 0.6
+                  else
+                    pairlist%cg_ele_scaling_list(num_ele(id), id) = 1.0_wp
+                  end if
+                end if
+                ! 
+              end if
+              ! 
+            end if
+
+            ! ----------------------------------
+            ! remove particles in exclusion list
+            ! ----------------------------------
+            ! 
+            nb15_calc = .true.
+            ! 
+            do k = ini_excl, fin_excl
+              if (j == enefunc%nonb_excl_list(k)) then
+                nb15_calc = .false.
+                exit
+              end if
+            end do
             if (.not. nb15_calc) cycle
 
 
@@ -1023,63 +1067,36 @@ contains
               ! 
             end if
 
-            ! ===
-            ! ele
-            ! ===
-            if (rij2 < pairdist2_ele) then
-              ! 
-              if (enefunc%cg_ele_mol_pair(i_chain_id, j_chain_id) == 1 .and. &
-                  abs (enefunc%cg_charge(i)) > EPS .and. &
-                  abs (enefunc%cg_charge(j)) > EPS) then
-                ! 
-                num_ele(id) = num_ele(id) + 1
-                if (.not. do_allocate) then
-                  pairlist%cg_ele_list(num_ele(id), id) = j
-                  if ((i_base_type == NABaseTypeDP .and. &
-                      j_base_type > NABaseTypeNAMAX) .or. &
-                      (j_base_type == NABaseTypeDP .and. &
-                      i_base_type > NABaseTypeNAMAX)) then
-                    pairlist%cg_ele_scaling_list(num_ele(id), id) = &
-                        - enefunc%cg_pro_DNA_ele_scale_Q / 0.6
-                  else
-                    pairlist%cg_ele_scaling_list(num_ele(id), id) = 1.0_wp
-                  end if
-                end if
-                ! 
-              end if
-              ! 
-            end if
-
             ! =============
             ! TIS mwca
             ! =============
             !
             ! manual TIS exv exclusion - appears to give the same result as original code
-            TIS_exclusion = .false.
-            if (i_chain_id == j_chain_id) then 
-              if (i_is_TIS .and. j_is_TIS) then
+            ! TIS_exclusion = .false.
+            ! if (i_chain_id == j_chain_id) then 
+            !   if (i_is_TIS .and. j_is_TIS) then
 
-                 if (i_is_TIS_phos) then
-                    n_TIS_sep = 4
+            !      if (i_is_TIS_phos) then
+            !         n_TIS_sep = 4
  
-                 else if (i_is_TIS_sugar) then
-                    n_TIS_sep = 4
+            !      else if (i_is_TIS_sugar) then
+            !         n_TIS_sep = 4
  
-                 else if (i_is_TIS_base) then
-                    n_TIS_sep = 2
+            !      else if (i_is_TIS_base) then
+            !         n_TIS_sep = 2
                  
-                 else
-                    n_TIS_sep = -1
-                 end if
-              end if
+            !      else
+            !         n_TIS_sep = -1
+            !      end if
+            !   end if
               
-              if (j < i + n_TIS_sep) then
-                TIS_exclusion = .true.
-              end if
+            !   if (j < i + n_TIS_sep) then
+            !     TIS_exclusion = .true.
+            !   end if
 
-            end if
+            ! end if
 
-            if (TIS_exclusion) cycle
+            ! if (TIS_exclusion) cycle
                 
             if (rij2 < pairdist2_mwca) then
               if (i_is_TIS .and. j_is_TIS) then
@@ -1622,12 +1639,12 @@ contains
         if (mod(i, nproc_city*nthread) /= my_id) proceed = .false.
         if (.not. enefunc%cg_IDR_HPS_is_IDR(i))  proceed = .false.
 
-        i_is_TIS    = enefunc%NA_base_type(i) == NABaseTypeTRBA .or. &
-                      enefunc%NA_base_type(i) == NABaseTypeTRBC .or. &
-                      enefunc%NA_base_type(i) == NABaseTypeTRBG .or. &
-                      enefunc%NA_base_type(i) == NABaseTypeTRBU .or. &
-                      enefunc%NA_base_type(i) == NABaseTypeTRP  .or. &
-                      enefunc%NA_base_type(i) == NABaseTypeTRS
+        i_is_TIS    = enefunc%NA_base_type(i) == NABaseTypeTBA .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTBC .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTBG .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTBU .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTP  .or. &
+                      enefunc%NA_base_type(i) == NABaseTypeTS
 
         if (proceed) then
 
@@ -1643,12 +1660,12 @@ contains
               cycle
             end if
 
-            j_is_TIS    = enefunc%NA_base_type(j) == NABaseTypeTRBA .or. &
-                          enefunc%NA_base_type(j) == NABaseTypeTRBC .or. &
-                          enefunc%NA_base_type(j) == NABaseTypeTRBG .or. &
-                          enefunc%NA_base_type(j) == NABaseTypeTRBU .or. &
-                          enefunc%NA_base_type(j) == NABaseTypeTRP  .or. &
-                          enefunc%NA_base_type(j) == NABaseTypeTRS
+            j_is_TIS    = enefunc%NA_base_type(j) == NABaseTypeTBA .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTBC .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTBG .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTBU .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTP  .or. &
+                          enefunc%NA_base_type(j) == NABaseTypeTS
 
             ! don't include TIS-TIS interactions in HPS within the same chain
             if ((i_is_TIS .and. j_is_TIS) .and. i_chain_id == j_chain_id) then
@@ -3157,9 +3174,9 @@ contains
             is_idr_i = .false.
           end if
           
-          if ((i_base_type == NABaseTypeTRBA) .or. (i_base_type == NABaseTypeTRBC) .or. &
-                   (i_base_type == NABaseTypeTRBG) .or. (i_base_type == NABaseTypeTRBU) .or. &
-                   (i_base_type == NABaseTypeTRP)  .or. (i_base_type == NABaseTypeTRS)) then
+          if ((i_base_type == NABaseTypeTBA) .or. (i_base_type == NABaseTypeTBC) .or. &
+                   (i_base_type == NABaseTypeTBG) .or. (i_base_type == NABaseTypeTBU) .or. &
+                   (i_base_type == NABaseTypeTP)  .or. (i_base_type == NABaseTypeTS)) then
             i_is_TIS = .true.
           else
             i_is_TIS = .false.
@@ -3173,12 +3190,12 @@ contains
             do while (j_atom > i_atom)
 
               j_chain_id  = enefunc%mol_chain_id(j_atom)
+              j_base_type = enefunc%NA_base_type(j_atom)
 
               ! 
               ! exclude DNA-DNA interactions
               ! 
               if (is_dna_i) then
-                j_base_type = enefunc%NA_base_type(j_atom)
                 if (j_base_type <= NABaseTypeDBMAX &
                     .or. j_base_type == NABaseTypeDP &
                     .or. j_base_type == NABaseTypeDS) then
@@ -3194,9 +3211,9 @@ contains
               end if
 
               if (i_is_TIS) then
-                if ((j_base_type == NABaseTypeTRBA) .or. (j_base_type == NABaseTypeTRBC) .or. &
-                    (j_base_type == NABaseTypeTRBG) .or. (j_base_type == NABaseTypeTRBU) .or. &
-                    (j_base_type == NABaseTypeTRP)  .or. (j_base_type == NABaseTypeTRS)) then
+                if ((j_base_type == NABaseTypeTBA) .or. (j_base_type == NABaseTypeTBC) .or. &
+                    (j_base_type == NABaseTypeTBG) .or. (j_base_type == NABaseTypeTBU) .or. &
+                    (j_base_type == NABaseTypeTP)  .or. (j_base_type == NABaseTypeTS)) then
                   j_is_TIS = .true.
                 else
 
@@ -3454,11 +3471,12 @@ contains
           i_chain_id  = enefunc%mol_chain_id(i_atom)
           is_phos_i   = .false.
           is_pro_i    = .false.
+          is_tis_phos_i = .false.
           if (i_base_type == NABaseTypeDP) then
             is_phos_i = .true.
           else if (i_base_type == NABaseTypeProtein) then
             is_pro_i  = .true.
-          else if (i_base_type == NABaseTypeTRP) then
+          else if (i_base_type == NABaseTypeTP) then
             is_tis_phos_i = .true.
           end if
 
@@ -3478,11 +3496,12 @@ contains
               j_chain_id  = enefunc%mol_chain_id(j_atom)
               is_phos_j   = .false.
               is_pro_j    = .false.
+              is_tis_phos_j = .false.
               if (j_base_type == NABaseTypeDP) then
                 is_phos_j = .true.
               else if (j_base_type == NABaseTypeProtein) then
                 is_pro_j  = .true.
-              else if (j_base_type == NABaseTypeTRP) then
+              else if (j_base_type == NABaseTypeTP) then
                 is_tis_phos_j = .true.
               end if
 
@@ -4191,9 +4210,9 @@ contains
           i_chain_id = enefunc%mol_chain_id(i_atom)
           i_base_type = enefunc%NA_base_type(i_atom)
 
-          if (i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
-          i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
-          i_base_type == NABaseTypeTRP  .or. i_base_type == NABaseTypeTRS) then
+          if (i_base_type == NABaseTypeTBA .or. i_base_type == NABaseTypeTBC .or. &
+          i_base_type == NABaseTypeTBG .or. i_base_type == NABaseTypeTBU .or. &
+          i_base_type == NABaseTypeTP  .or. i_base_type == NABaseTypeTS) then
             i_is_TIS = .true.
           else
             i_is_TIS = .false.
@@ -4210,9 +4229,9 @@ contains
 
               j_base_type = enefunc%NA_base_type(j_atom)
 
-              if (i_base_type == NABaseTypeTRBA .or. i_base_type == NABaseTypeTRBC .or. &
-              i_base_type == NABaseTypeTRBG .or. i_base_type == NABaseTypeTRBU .or. &
-              i_base_type == NABaseTypeTRP  .or. i_base_type == NABaseTypeTRS) then
+              if (i_base_type == NABaseTypeTBA .or. i_base_type == NABaseTypeTBC .or. &
+              i_base_type == NABaseTypeTBG .or. i_base_type == NABaseTypeTBU .or. &
+              i_base_type == NABaseTypeTP  .or. i_base_type == NABaseTypeTS) then
                 j_is_TIS = .true.
               else
                 j_is_TIS = .false.
@@ -4231,7 +4250,6 @@ contains
               if ((i_is_TIS .and. j_is_TIS) .and. &
                   (i_chain_id == j_chain_id)) then ! max - turn off if both TIS belonging to the same chain
                 do_calc = .false.
-                ! write(*,*) 'TIS-TIS HPS turned off between ', i_atom, j_atom
               end if
               ! 
               if (.not. do_calc) then
@@ -5197,6 +5215,16 @@ contains
     integer          :: ini_excl, fin_excl
     integer          :: num_mwca_max
 
+    integer          :: i_chain_id, j_chain_id
+    integer          :: n_TIS_sep
+    integer          :: num_atoms
+
+    logical          :: i_is_TIS, j_is_TIS
+    logical          :: i_is_TIS_base, j_is_TIS_base
+    logical          :: i_is_TIS_sugar, j_is_TIS_sugar
+    logical          :: i_is_TIS_phos, j_is_TIS_phos
+    logical          :: TIS_exclusion
+
     real(wp)         :: dij(1:3)
     real(wp)         :: dij_pbc(1:3)
     real(wp)         :: rij_sqr
@@ -5216,12 +5244,13 @@ contains
 #endif
 
     n_tis              = enefunc%num_cg_particle_TIS_all
+    num_atoms              = size(coord_pbc(1,:))
 
     box_size(1)        = boundary%box_size_x
     box_size(2)        = boundary%box_size_y
     box_size(3)        = boundary%box_size_z
 
-    pairdist_mwca_sqr  = pairlist%tis_pairlistdist_mwca ** 2
+    pairdist_mwca_sqr  = pairlist%tis_pairlistdist_mwca  * pairlist%tis_pairlistdist_mwca
 
     icell_atom         => pairlist%cell_index_cg_all
     cell_list_mwca     => pairlist%cell_linked_list_tis_mwca
@@ -5236,7 +5265,7 @@ contains
     nthread = 1
 #endif
 
-    pairlist%num_tis_mwca_calc(1:n_tis,1:nthread) = 0
+    pairlist%num_tis_mwca_calc(1:num_atoms,1:nthread) = 0
 
     if (pairlist%allocate_pbc_tis_mwca) then
       nloops      = 2
@@ -5252,17 +5281,18 @@ contains
 
       if (.not. do_allocate) num_mwca_pre(1:nthread) = 0
 
-      !$omp parallel                                        &
-      !$omp private(id, my_id, i, j, k, i_tis, j_tis,        &
-      !$omp         i_atom, j_atom, i_cell, j_cell, i_nbcell,&
-      !$omp         i_base_type, j_base_type,                &
-      !$omp         do_calc, ini_excl, fin_excl,             &
-      !$omp         dij, dij_pbc, rij_sqr, pbc_int)          &
-      !$omp shared(n_tis, box_size, pairdist_mwca_sqr,       &
-      !$omp        icell_atom, cell_list_mwca, cell_head_mwca, &
-      !$omp        num_mwca_pre, num_mwca, tis_list,         &
-      !$omp        nthread, do_allocate, my_city_rank,       &
-      !$omp        nproc_city, enefunc, boundary, coord_pbc, &
+      !$omp parallel                                          &
+      !$omp private(id, my_id, i, j, k, i_tis, j_tis,         &
+      !$omp         i_atom, j_atom, i_cell, j_cell, i_nbcell, &
+      !$omp         i_base_type, j_base_type,                 &
+      !$omp         do_calc, ini_excl, fin_excl,              &
+      !$omp         dij, dij_pbc, rij_sqr, pbc_int,           &
+      !$omp         i_chain_id, j_chain_id)                   &
+      !$omp shared(n_tis, box_size, pairdist_mwca_sqr,        &
+      !$omp        icell_atom, cell_list_mwca, cell_head_mwca,&
+      !$omp        num_mwca_pre, num_mwca, tis_list,          &
+      !$omp        nthread, do_allocate, my_city_rank,        &
+      !$omp        nproc_city, enefunc, boundary, coord_pbc,  &
       !$omp        pairlist)
       !
 #ifdef OMP
@@ -5273,28 +5303,63 @@ contains
       my_id = my_city_rank * nthread + id
       id    = id + 1
 
-      do i_tis = 1, n_tis - 1
+      ! write(*,*) "maxfind, ntis, nthread", n_tis, nthread
 
-        if (mod(i_tis - 1, nproc_city * nthread) == my_id) then
+      do i_atom = 1, num_atoms - 1
 
-          i_atom      = tis_list(i_tis)
+        if (mod(i_atom - 1, nproc_city * nthread) == my_id) then
+
           i_cell      = icell_atom(i_atom)
+
           i_base_type = enefunc%NA_base_type(i_atom)
+          i_chain_id  = enefunc%mol_chain_id(i_atom)
+  
+
+          i_is_TIS_base = (i_base_type == NABaseTypeTBA .or. i_base_type == NABaseTypeTBC .or. &
+          i_base_type == NABaseTypeTBG .or. i_base_type == NABaseTypeTBU)
+  
+          i_is_TIS_sugar = i_base_type == NABaseTypeTS
+  
+          i_is_TIS_phos = i_base_type == NABaseTypeTP
+
+          if ((i_is_TIS_base) .or. (i_is_TIS_sugar) .or. (i_is_TIS_phos)) then
+            i_is_TIS = .true.
+          else
+            i_is_TIS = .false.
+          end if
 
           do i_nbcell = 1, boundary%num_neighbor_cells_CG_mwca
 
             j_cell = boundary%neighbor_cells_CG_mwca(i_nbcell, i_cell)
-            j_tis  = cell_head_mwca(j_cell)
+            j_atom  = cell_head_mwca(j_cell)
 
-            do while (j_tis > i_tis)
+            do while (j_atom > i_atom)
 
-              j_atom = tis_list(j_tis)
+              ! j_atom = tis_list(j_tis)
 
               j_base_type = enefunc%NA_base_type(j_atom)
+              j_chain_id = enefunc%mol_chain_id(j_atom)
 
+              j_is_TIS_base = j_base_type == NABaseTypeTBA .or. j_base_type == NABaseTypeTBC .or. &
+              j_base_type == NABaseTypeTBG .or. j_base_type == NABaseTypeTBU
+
+              j_is_TIS_sugar = j_base_type == NABaseTypeTS
+
+              j_is_TIS_phos = j_base_type == NABaseTypeTP
               do_calc = .true.
-              !
-              ! exclusion list
+
+              if ((j_is_TIS_base) .or. (j_is_TIS_sugar) .or. (j_is_TIS_phos)) then
+                j_is_TIS = .true.
+              else
+                j_is_TIS = .false.
+              end if
+
+              if (.not. (i_is_TIS .and. j_is_TIS)) then
+                j_atom = cell_list_mwca(j_atom)
+                cycle
+              end if
+              
+              !exclusion list
               ini_excl = enefunc%cg_istart_nonb_excl(i_atom)
               fin_excl = ini_excl + enefunc%num_nonb_excl(i_atom) - 1
               do k = ini_excl, fin_excl
@@ -5305,41 +5370,9 @@ contains
               end do
 
               if (.not. do_calc) then
-                j_tis = cell_list_mwca(j_tis)
+                j_atom = cell_list_mwca(j_atom)
                 cycle
               end if
-
-              ! TIS_exclusion = .false.
-              ! if (i_chain_id == j_chain_id) then 
-              !   if (i_is_TIS .and. j_is_TIS) then
-
-              !     if (i_is_TIS_phos) then
-              !         n_TIS_sep = 4
-  
-              !     else if (i_is_TIS_sugar) then
-              !         n_TIS_sep = 4
-  
-              !     else if (i_is_TIS_base) then
-              !         n_TIS_sep = 2
-                  
-              !     else
-              !         n_TIS_sep = -1
-              !     end if
-              !   end if
-                
-              !   if (j < i + n_TIS_sep) then
-              !     TIS_exclusion = .true.
-              !   end if
-
-              ! end if
-
-              ! if (TIS_exclusion) cycle
-              !   !
-              !   if (.not. do_calc) then
-              !     j_tis = cell_list_mwca(j_tis)
-              !     cycle
-              !   end if
- 
 
               !
               ! distance within pairlistdist?
@@ -5361,13 +5394,13 @@ contains
                 end if
               end if
 
-              j_tis = cell_list_mwca(j_tis)
+              j_atom = cell_list_mwca(j_atom)
             end do              ! j_atom
           end do                ! i_nbcell
         end if                  ! compute on the current thread
 
         if (.not. do_allocate) then
-          pairlist%num_tis_mwca_calc(i_tis,id) = num_mwca(id) - num_mwca_pre(id)
+          pairlist%num_tis_mwca_calc(i_atom,id) = num_mwca(id) - num_mwca_pre(id)
           num_mwca_pre(id) = num_mwca(id)
         end if
 
@@ -5379,7 +5412,6 @@ contains
       if (do_allocate) then
         num_mwca_max = max(1, maxval(num_mwca(1:nthread)))
         num_mwca_max = int(real(num_mwca_max,wp) * FactNumNb15)
-
         call alloc_pairlist(pairlist, PairListPbcTISmwca, num_mwca_max)
 
         pairlist%num_tis_mwca_max = num_mwca_max

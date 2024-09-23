@@ -2807,7 +2807,6 @@ contains
 
     real(wp), pointer         :: charge(:)
 
-
     call timer(TimerNonBond, TimerOn)
     call timer(TimerCGDebye, TimerOn)
 
@@ -2832,8 +2831,6 @@ contains
     ele_tmp_a_C   = 1.0e0_wp - 2.551e-1_wp * ele_tmp_sol_C  &
         + 5.151e-2_wp * ele_tmp_sol_C * ele_tmp_sol_C       &
         - 6.889e-3_wp * ele_tmp_sol_C * ele_tmp_sol_C * ele_tmp_sol_C
-    diele_const = ele_tmp_e_T * ele_tmp_a_C
-    ! write(*,*) 'diele_const:',diele_const
     Tc = ele_tmp_sol_T - 273.15_wp
     diele_const =  MM_A + MM_B*Tc + MM_C*Tc*Tc + MM_D*Tc*Tc*Tc
 
@@ -2851,8 +2848,6 @@ contains
     inv_diele_const  = 1.0_wp / diele_const
 
     num_ele          = 0
-
-    ! write (*,*) cutoff, inv_debye_length, ele_coef, inv_diele_const
 
     ! calculate energy and gradient
     !
@@ -2912,6 +2907,8 @@ contains
             * ele_scaling(k, id)
 
         eele = eele + e_tmp_ele
+
+        ! write(*,*) 'ELE:',i,j, e_tmp_ele
 
         ! gradient
         !

@@ -1938,15 +1938,17 @@ contains
     ! -----------------------------
 
     ! TIS Local Stack
-    if (enefunc%tis_lstack_calc) then
-      if (boundary%type == BoundaryTypePBC .and. boundary%calc_local_pbc) then
-        call compute_energy_tis_lstack_pbc(enefunc, boundary, &
-             coord_pbc, force_omp, virial, energy%tis_lstack)
-      else
-        call compute_energy_tis_lstack(enefunc, &
-             coord, force_omp, virial, energy%tis_lstack)
-      end if
-    end if
+    ! if (enefunc%tis_lstack_calc) then
+    !   if (boundary%type == BoundaryTypePBC .and. boundary%calc_local_pbc) then
+    !     call compute_energy_tis_lstack_pbc(enefunc, boundary, &
+    !          coord_pbc, force_omp, virial, energy%tis_lstack)
+    !     write (*,*) 'TIS Local Stack energy is calculated for pbc'
+    !   else
+    !     call compute_energy_tis_lstack(enefunc, &
+    !          coord, force_omp, virial, energy%tis_lstack)
+    !     write (*,*) 'TIS Local Stack energy is calculated for nobc'
+    !   end if
+    ! end if
 
     select case(boundary%type)
 
@@ -1957,6 +1959,13 @@ contains
         if (enefunc%tis_mwca_calc) then
           call compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
                          coord_pbc, force_omp, virial, energy%cg_exv)
+          ! write (*,*) 'TIS MWCA energy is calculated for pbc'
+        end if
+
+        if (enefunc%tis_lstack_calc) then
+          call compute_energy_tis_lstack_pbc(enefunc, boundary, &
+          coord_pbc, force_omp, virial, energy%tis_lstack)
+          ! write (*,*) 'TIS Local Stack energy is calculated for pbc'
         end if
 
       end if
@@ -1968,6 +1977,13 @@ contains
         if (enefunc%tis_mwca_calc) then
           call compute_energy_tis_mwca(enefunc, molecule, pairlist, &
                                      coord, force_omp, virial, energy%cg_exv)
+          ! write (*,*) 'TIS MWCA energy is calculated for nobc'
+        end if
+
+        if (enefunc%tis_lstack_calc) then
+          call compute_energy_tis_lstack(enefunc, &
+          coord, force_omp, virial, energy%tis_lstack)
+          ! write (*,*) 'TIS Local Stack energy is calculated for nobc'
         end if
 
       end if

@@ -735,7 +735,7 @@ contains
   !
   !======1=========2=========3=========4=========5=========6=========7=========8
 
-  subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
+subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
                                      coord, force, virial, enemwca)
 
     ! formal arguments
@@ -753,7 +753,7 @@ contains
     real(wp)                  :: dr, adr2, adr4, adr8
     real(wp)                  :: grad(3), dv_dr, eps, D
     real(wp)                  :: ene_omp(nthread), ene_omp_tmp
-    integer                   :: i, j, k, l, natom, id
+    integer                   :: i, j, k, l, n_atom, id
     integer                   :: i1, i2, i3, k1
     integer                   :: num_mwca, ini_mwca, fin_mwca
     integer                   :: omp_get_thread_num
@@ -765,7 +765,7 @@ contains
     call timer(TimerNonBond, TimerOn)
     call timer(TimerTISmWCA, TimerOn)
 
-    natom          = size(coord(1,:))
+    n_atom          = enefunc%num_cg_particle_TIS_all
     num_mwca_calc  => pairlist%num_tis_mwca_calc
     mwca_list      => pairlist%tis_mwca_list
     mwca_eps       => enefunc%tis_mwca_eps
@@ -790,7 +790,7 @@ contains
     !$omp         i1, i2, i3, k1,                                   &
     !$omp         D, eps, dr, adr2, adr4, adr8, dv_dr, id,          &
     !$omp         ene_omp_tmp, coord_i, force_tmp)                  &
-    !$omp shared(natom, num_mwca_calc, mwca_list, bsize, atomtype,  &
+    !$omp shared(n_atom, num_mwca_calc, mwca_list, bsize, atomtype,  &
     !$omp        mwca_eps, mwca_D, coord, force, a, a2, ene_omp)
     !
 #ifdef OMP
@@ -798,7 +798,7 @@ contains
 #else
     id      = 1
 #endif
-    do i = 1, natom-1
+    do i = 1, n_atom-1
 
       !proceed = .false.
 

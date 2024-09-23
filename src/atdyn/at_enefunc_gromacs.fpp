@@ -1196,18 +1196,18 @@ contains
         atom_cls_2_base_type(i) = NABaseTypeRP
       else if (grotop%atomtypes(i)%type_name .eq. 'RS') then
         atom_cls_2_base_type(i) = NABaseTypeRS
-      else if (grotop%atomtypes(i)%type_name .eq. 'TRP') then
-        atom_cls_2_base_type(i) = NABaseTypeTRP
-      else if (grotop%atomtypes(i)%type_name .eq. 'TRS') then
-        atom_cls_2_base_type(i) = NABaseTypeTRS
-      else if (grotop%atomtypes(i)%type_name .eq. 'TRA') then
-        atom_cls_2_base_type(i) = NABaseTypeTRBA
-      else if (grotop%atomtypes(i)%type_name .eq. 'TRC') then
-        atom_cls_2_base_type(i) = NABaseTypeTRBC
-      else if (grotop%atomtypes(i)%type_name .eq. 'TRG') then
-        atom_cls_2_base_type(i) = NABaseTypeTRBG
-      else if (grotop%atomtypes(i)%type_name .eq. 'TRU') then
-        atom_cls_2_base_type(i) = NABaseTypeTRBU
+      else if (grotop%atomtypes(i)%type_name .eq. 'TP') then
+        atom_cls_2_base_type(i) = NABaseTypeTP
+      else if (grotop%atomtypes(i)%type_name .eq. 'TS') then
+        atom_cls_2_base_type(i) = NABaseTypeTS
+      else if (grotop%atomtypes(i)%type_name .eq. 'TA') then
+        atom_cls_2_base_type(i) = NABaseTypeTBA
+      else if (grotop%atomtypes(i)%type_name .eq. 'TC') then
+        atom_cls_2_base_type(i) = NABaseTypeTBC
+      else if (grotop%atomtypes(i)%type_name .eq. 'TG') then
+        atom_cls_2_base_type(i) = NABaseTypeTBG
+      else if (grotop%atomtypes(i)%type_name .eq. 'TU') then
+        atom_cls_2_base_type(i) = NABaseTypeTBU
       else
         atom_cls_2_base_type(i) = NABaseTypeProtein
       end if
@@ -1763,7 +1763,7 @@ contains
     (4.0_wp * PI * eps * kboltz_unit * sol_T) * 1e+10_wp
 
     do i = 1, n_atoms
-      if (enefunc%NA_base_type(i) == NABaseTypeTRP) then
+      if (enefunc%NA_base_type(i) == NABaseTypeTP) then
         enefunc%cg_charge(i) = - (length_per_unit / lb)
       end if
     end do
@@ -2298,6 +2298,9 @@ contains
     integer              :: n_charged
     integer              :: n_pro_charged
 
+    integer              :: base_type
+    logical              :: is_tis
+
     type(s_grotop_mol), pointer :: gromol
 
 
@@ -2355,6 +2358,10 @@ contains
     ! ---------------------------------------------
     ! 
     do i = 1, n_atoms
+      base_type = enefunc%NA_base_type(i)
+      is_tis = ((base_type == NABaseTypeTBA) .or. (base_type == NABaseTypeTBC) .or. &
+                (base_type == NABaseTypeTBG) .or. (base_type == NABaseTypeTBU) .or. &
+                (base_type == NABaseTypeTP ) .or. (base_type == NABaseTypeTS ))
       if (.not. enefunc%cg_IDR_HPS_is_IDR(i) ) then
         cycle
       end if
@@ -2362,7 +2369,10 @@ contains
         if (grotop%cg_IDR_HPS_atomtypes(j)%type_name == molecule%atom_cls_name(i) ) then
           enefunc%cg_IDR_HPS_sigma_half(i)  = grotop%cg_IDR_HPS_atomtypes(j)%sigma * 5.0_wp
           enefunc%cg_IDR_HPS_lambda_half(i) = grotop%cg_IDR_HPS_atomtypes(j)%lambda * 0.5_wp
-          enefunc%cg_charge(i)              = grotop%cg_IDR_HPS_atomtypes(j)%charge
+
+          if (.not. is_tis) then
+            enefunc%cg_charge(i) = grotop%cg_IDR_HPS_atomtypes(j)%charge
+          end if
         end if
       end do
     end do
