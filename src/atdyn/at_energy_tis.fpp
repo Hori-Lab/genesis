@@ -831,9 +831,9 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
           D = mwca_D(atomtype(i), atomtype(j))
 
           ! compute distance
-          dij(1)  = coord_i(1) - coord(1,j) + bsize(1)*real(i1,wp)
-          dij(2)  = coord_i(2) - coord(2,j) + bsize(2)*real(i2,wp)
-          dij(3)  = coord_i(3) - coord(3,j) + bsize(3)*real(i3,wp)
+          dij(1)  = coord_i(1) - coord(1,j) - bsize(1)*real(i1,wp)
+          dij(2)  = coord_i(2) - coord(2,j) - bsize(2)*real(i2,wp)
+          dij(3)  = coord_i(3) - coord(3,j) - bsize(3)*real(i3,wp)
           !dij(1:3) = coord(1:3,i) - coord(1:3,j)
           dist = norm2(dij)
 

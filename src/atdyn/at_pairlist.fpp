@@ -1668,7 +1668,7 @@ contains
                           enefunc%NA_base_type(j) == NABaseTypeTS
 
             ! don't include TIS-TIS interactions in HPS within the same chain
-            if ((i_is_TIS .and. j_is_TIS) .and. i_chain_id == j_chain_id) then
+            if (i_is_TIS .and. j_is_TIS) then
               cycle
             end if
 
@@ -4247,8 +4247,7 @@ contains
               if (i_chain_id == j_chain_id .and. i_atom == j_atom - 1) then
                 do_calc = .false.
               end if
-              if ((i_is_TIS .and. j_is_TIS) .and. &
-                  (i_chain_id == j_chain_id)) then ! max - turn off if both TIS belonging to the same chain
+              if ((i_is_TIS .and. j_is_TIS)) then
                 do_calc = .false.
               end if
               ! 
