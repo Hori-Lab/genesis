@@ -16,6 +16,7 @@
 module fileio_psf_mod
 
   use fileio_mod
+  use string_mod
   use messages_mod
   use mpi_parallel_mod
   use constants_mod
@@ -146,6 +147,7 @@ module fileio_psf_mod
   private :: write_psf_lpair 
   private :: write_psf_cmap
   private :: get_digit
+  private :: is_int
 
 contains
 
@@ -852,6 +854,7 @@ contains
     ! local variables
     integer                  :: i, j
     character(8)             :: cstr, cseg_nm, cres_nm, catm_nm, cres_nb
+    character(6)             :: catm_nm2
     character(20)            :: ctmp
     logical                  :: insertion
 
@@ -863,8 +866,9 @@ contains
     ! Check psf file type
     !
     read(file,*) ctmp, ctmp, ctmp, ctmp, ctmp, cstr
-    if (cstr(1:1) >= 'A' .and. cstr(1:1) <= 'Z' .or. &
-        cstr(1:1) >= 'a' .and. cstr(1:1) <= 'z') then
+
+
+    if (.not. is_int(cstr)) then
       psf%type = PsfTypeXPLOR
     else
       psf%type = PsfTypeCHARMM
@@ -913,11 +917,13 @@ contains
                       cres_nb,              &
                       psf%residue_name(i),  &
                       psf%atom_name(i),     &
-                      psf%atom_cls_name(i), &
+                      catm_nm2,             &
                       psf%charge(i),        &
                       psf%mass(i),          &
                       psf%imove(i)
 
+        call toupper(catm_nm2)
+        psf%atom_cls_name(i) = catm_nm2
         insertion = .false.
         do j = 1, len_trim(cres_nb)
           if (cres_nb(j:j) >= 'A' .and. cres_nb(j:j) <= 'Z' .or.  &
@@ -2272,5 +2278,54 @@ contains
     return
 
   end function get_digit
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    is_int
+  !> @brief        check for characters is integer or not
+  !! @authors      CK
+  !! @param[in]    str : characters
+  !! @return       flag for blank or not
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  function is_int(str)
+
+    ! return value
+    logical        :: is_int
+    logical        :: is_char_num
+
+    ! formal arguments
+    character(*),            intent(in) :: str
+
+    integer                  :: i, j
+
+    ! parameter
+    integer,       parameter :: NumInt = 10
+
+    character(1),  parameter :: cint(NumInt) = &
+                                        (/'0','1','2','3','4','5','6', &
+                                          '7','8','9'/)
+
+    is_int = .true.
+
+    do i = 1, len(str)
+      if (str(i:i) .eq. ' ' .or. str(i:i) .eq. char(9)) cycle
+      is_char_num = .false.
+      do j = 1, NumInt
+        if (str(i:i) .eq. cint(j)) then
+          is_char_num = .true.
+          exit
+        end if
+      end do
+      if (.not. is_char_num) then
+        is_int = .false.
+        exit
+      end if
+    end do
+
+    return
+
+  end function is_int
 
 end module fileio_psf_mod
