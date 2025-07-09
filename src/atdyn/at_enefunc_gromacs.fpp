@@ -2324,6 +2324,8 @@ contains
     end if
 
     enefunc%cg_IDR_HPS_epsilon = ene_info%cg_IDR_HPS_epsilon
+    enefunc%cg_IDR_Aromatic_epsilon = ene_info%cg_IDR_Aromatic_epsilon
+    enefunc%cg_IDR_CationPI_epsilon = ene_info%cg_IDR_CationPI_epsilon
 
     ! allocate everything
     n_atoms = molecule%num_atoms
@@ -2369,6 +2371,7 @@ contains
         if (grotop%cg_IDR_HPS_atomtypes(j)%type_name == molecule%atom_cls_name(i) ) then
           enefunc%cg_IDR_HPS_sigma_half(i)  = grotop%cg_IDR_HPS_atomtypes(j)%sigma * 5.0_wp
           enefunc%cg_IDR_HPS_lambda_half(i) = grotop%cg_IDR_HPS_atomtypes(j)%lambda * 0.5_wp
+          enefunc%HPS_atom_name(i)          = grotop%cg_IDR_HPS_atomtypes(j)%type_name
 
           if (.not. is_tis) then
             enefunc%cg_charge(i) = grotop%cg_IDR_HPS_atomtypes(j)%charge

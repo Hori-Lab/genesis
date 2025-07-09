@@ -140,6 +140,8 @@ module at_energy_mod
     logical               :: cg_infinite_DNA        = .false.
 
     real(wp)              :: tis_pairlistdist_mwca  = 11.0_wp
+    real(wp)              :: cg_IDR_Aromatic_epsilon = 0.2_wp
+    real(wp)              :: cg_IDR_CationPI_epsilon = 0.2_wp
   end type s_ene_info
 
   ! varibles
@@ -475,6 +477,10 @@ contains
 
     call read_ctrlfile_real   (handle, Section, 'tis_pairlistdist_mwca',  &
         ene_info%tis_pairlistdist_mwca)
+    call read_ctrlfile_real   (handle, Section, 'cg_IDR_Aromatic_epsilon',&
+        ene_info%cg_IDR_Aromatic_epsilon)
+    call read_ctrlfile_real   (handle, Section, 'cg_IDR_CationPI_epsilon',&
+        ene_info%cg_IDR_CationPI_epsilon)
 
 !!!develop
     !TODO CK

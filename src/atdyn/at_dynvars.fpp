@@ -363,7 +363,10 @@ contains
                dynvars%energy%cg_exv             + &
                dynvars%energy%PWMcos             + &
                dynvars%energy%PWMcosns           + &
+               dynvars%energy%tis_lstack         + &
                totresene
+
+    ! write(*,*) 'stack_tis:', dynvars%energy%tis_lstack
 
     if (enefunc%dispersion_corr .ne. Disp_Corr_NONE) then
 
