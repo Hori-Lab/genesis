@@ -3916,16 +3916,16 @@ contains
           end if
 
 
-          if ((protein_residue(i) == 'TA' .or. protein_residue(j) == 'TA' .or. &
-               protein_residue(i) == 'TG' .or. protein_residue(j) == 'TG' .or. &
-               protein_residue(i) == 'TC' .or. protein_residue(j) == 'TC' .or. &
-               protein_residue(i) == 'TU' .or. protein_residue(j) == 'TU' .or. &
-               protein_residue(i) == 'TS' .or. protein_residue(j) == 'TS' .or. &
-               protein_residue(i) == 'TP' .or. protein_residue(j) == 'TP')) then
+          ! if ((protein_residue(i) == 'TA' .or. protein_residue(j) == 'TA' .or. &
+          !      protein_residue(i) == 'TG' .or. protein_residue(j) == 'TG' .or. &
+          !      protein_residue(i) == 'TC' .or. protein_residue(j) == 'TC' .or. &
+          !      protein_residue(i) == 'TU' .or. protein_residue(j) == 'TU' .or. &
+          !      protein_residue(i) == 'TS' .or. protein_residue(j) == 'TS' .or. &
+          !      protein_residue(i) == 'TP' .or. protein_residue(j) == 'TP')) then
 
-              write(*,*) 'res1:', protein_residue(i), 'res2:', protein_residue(j), epsilon, lambda
+          !     write(*,*) 'res1:', protein_residue(i), 'res2:', protein_residue(j), epsilon, lambda
 
-          end if 
+          ! end if 
 
           sigma     = hps_sigma_half_i_tmp + hps_sigma_half(j)
           sigma_sqr = sigma * sigma

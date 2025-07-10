@@ -3698,7 +3698,7 @@ contains
     ! local variables
     integer                  :: i, j, k
     integer                  :: istart, iend
-    integer                  :: nstack
+    integer                  :: nstack, natom, ioffset
 
     type(s_grotop_mol), pointer :: gromol
 
@@ -3715,18 +3715,22 @@ contains
     call alloc_enefunc(enefunc, EneFuncTISLocalStack, nstack)
 
     nstack = 0
+    natom  = 0
+
     do i = 1, grotop%num_molss
       gromol => grotop%molss(i)%moltype%mol
       do j = 1, grotop%molss(i)%count
+        ioffset = natom
+        natom   = natom + gromol%num_atoms
         do k = 1, gromol%num_tis_lstack
           nstack = nstack + 1
-          enefunc%tis_lstack_list(1, nstack) = gromol%tislstacks(k)%atom_idx1
-          enefunc%tis_lstack_list(2, nstack) = gromol%tislstacks(k)%atom_idx2
-          enefunc%tis_lstack_list(3, nstack) = gromol%tislstacks(k)%atom_idx3
-          enefunc%tis_lstack_list(4, nstack) = gromol%tislstacks(k)%atom_idx4
-          enefunc%tis_lstack_list(5, nstack) = gromol%tislstacks(k)%atom_idx5
-          enefunc%tis_lstack_list(6, nstack) = gromol%tislstacks(k)%atom_idx6
-          enefunc%tis_lstack_list(7, nstack) = gromol%tislstacks(k)%atom_idx7
+          enefunc%tis_lstack_list(1, nstack) = gromol%tislstacks(k)%atom_idx1 + ioffset
+          enefunc%tis_lstack_list(2, nstack) = gromol%tislstacks(k)%atom_idx2 + ioffset
+          enefunc%tis_lstack_list(3, nstack) = gromol%tislstacks(k)%atom_idx3 + ioffset
+          enefunc%tis_lstack_list(4, nstack) = gromol%tislstacks(k)%atom_idx4 + ioffset
+          enefunc%tis_lstack_list(5, nstack) = gromol%tislstacks(k)%atom_idx5 + ioffset
+          enefunc%tis_lstack_list(6, nstack) = gromol%tislstacks(k)%atom_idx6 + ioffset
+          enefunc%tis_lstack_list(7, nstack) = gromol%tislstacks(k)%atom_idx7 + ioffset
           enefunc%tis_lstack_h(nstack)  = gromol%tislstacks(k)%h
           enefunc%tis_lstack_s(nstack)  = gromol%tislstacks(k)%s
           enefunc%tis_lstack_Tm(nstack) = gromol%tislstacks(k)%Tm
