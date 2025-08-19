@@ -176,6 +176,10 @@ contains
       !
       call setup_enefunc_cg_IDR_HPS(ene_info, grotop, molecule, enefunc)
 
+      ! CG ele: Debye-Huckle
+      !
+      call setup_enefunc_cg_ele(ene_info, grotop, molecule, enefunc)
+
       ! CG IDR: KH model
       !
       call setup_enefunc_cg_IDR_KH(ene_info, grotop, molecule, enefunc)
@@ -1719,7 +1723,7 @@ contains
         (4.0_wp * PI * ELECTRIC_CONST) * AVOGADRO * JOU2CAL / &
         1e3_wp * 1e10_wp
 
-    sol_T = enefunc%cg_ele_sol_T
+    sol_T = ene_info%cg_sol_temperature
     sol_C = enefunc%cg_ele_sol_IC
     e_T   = 2.494e2_wp - 7.88e-1_wp * sol_T &
         + 7.2e-4_wp * sol_T * sol_T
@@ -1749,24 +1753,24 @@ contains
 
     enefunc%cg_charge(1:n_atoms)   = molecule%charge(1:n_atoms)
 
-    ! Adjust charge of RNA phosphate based on counterion condensation
-    Tc = sol_T - 273.15e0_wp
-    ek =  MM_A + MM_B*Tc + MM_C*Tc*Tc + MM_D*Tc*Tc*Tc
-    enefunc%cg_dielec_const = ek
+    ! ! Adjust charge of RNA phosphate based on counterion condensation
+    ! Tc = sol_T - 273.15e0_wp
+    ! ek =  MM_A + MM_B*Tc + MM_C*Tc*Tc + MM_D*Tc*Tc*Tc
+    ! enefunc%cg_dielec_const = ek
 
-    kboltz_unit = (KBOLTZ * (CAL2JOU*1000.0_wp)) / AVOGADRO  
-    length_per_unit = 4.38178046_wp
+    ! kboltz_unit = (KBOLTZ * (CAL2JOU*1000.0_wp)) / AVOGADRO  
+    ! length_per_unit = 4.38178046_wp
 
-    eps = (ELECTRIC_CONST * ek)
+    ! eps = (ELECTRIC_CONST * ek)
     
-    lb = ELEMENT_CHARGE**2 / &
-    (4.0_wp * PI * eps * kboltz_unit * sol_T) * 1e+10_wp
+    ! lb = ELEMENT_CHARGE**2 / &
+    ! (4.0_wp * PI * eps * kboltz_unit * sol_T) * 1e+10_wp
 
-    do i = 1, n_atoms
-      if (enefunc%NA_base_type(i) == NABaseTypeTP) then
-        enefunc%cg_charge(i) = - (length_per_unit / lb)
-      end if
-    end do
+    ! do i = 1, n_atoms
+    !   if (enefunc%NA_base_type(i) == NABaseTypeTP) then
+    !     enefunc%cg_charge(i) = - (length_per_unit / lb)
+    !   end if
+    ! end do
 
     enefunc%cg_pro_DNA_ele_scale_Q = ene_info%cg_pro_DNA_ele_scale_Q
 
@@ -3713,7 +3717,8 @@ contains
     end do
 
     call alloc_enefunc(enefunc, EneFuncTISLocalStack, nstack)
-
+    enefunc%num_tis_lstack = nstack
+    
     nstack = 0
     natom  = 0
 
@@ -3743,8 +3748,6 @@ contains
         end do
       end do
     end do
-
-    enefunc%num_tis_lstack = nstack
 
     call get_loop_index(enefunc%num_tis_lstack, istart, iend)
     enefunc%istart_tis_lstack = istart

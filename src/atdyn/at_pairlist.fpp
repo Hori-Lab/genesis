@@ -1667,7 +1667,7 @@ contains
                           enefunc%NA_base_type(j) == NABaseTypeTP  .or. &
                           enefunc%NA_base_type(j) == NABaseTypeTS
 
-            ! don't include TIS-TIS interactions in HPS within the same chain
+            ! don't include TIS-TIS interactions in HPS
             if (i_is_TIS .and. j_is_TIS) then
               cycle
             end if
@@ -4229,9 +4229,9 @@ contains
 
               j_base_type = enefunc%NA_base_type(j_atom)
 
-              if (i_base_type == NABaseTypeTBA .or. i_base_type == NABaseTypeTBC .or. &
-              i_base_type == NABaseTypeTBG .or. i_base_type == NABaseTypeTBU .or. &
-              i_base_type == NABaseTypeTP  .or. i_base_type == NABaseTypeTS) then
+              if (j_base_type == NABaseTypeTBA .or. j_base_type == NABaseTypeTBC .or. &
+              j_base_type == NABaseTypeTBG .or. j_base_type == NABaseTypeTBU .or. &
+              j_base_type == NABaseTypeTP  .or. j_base_type == NABaseTypeTS) then
                 j_is_TIS = .true.
               else
                 j_is_TIS = .false.
@@ -4247,6 +4247,7 @@ contains
               if (i_chain_id == j_chain_id .and. i_atom == j_atom - 1) then
                 do_calc = .false.
               end if
+              ! exclude TIS-TIS interaction
               if ((i_is_TIS .and. j_is_TIS)) then
                 do_calc = .false.
               end if

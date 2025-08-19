@@ -2207,7 +2207,7 @@ contains
                  + energy%cg_DNA_exv                                   &
                  + energy%cg_IDR_HPS + energy%cg_IDR_KH                &
                  + energy%cg_KH_inter_pro + energy%cg_exv              &
-                 + energy%PWMcos + energy%PWMcosns
+                 + energy%PWMcos + energy%PWMcosns + energy%tis_lstack
     energy%drms(1:2) = drms(1:2)
 
     ! GaMD boost and statistics
@@ -4675,8 +4675,9 @@ contains
     before_allreduce(39) = energy%cg_IDR_KH
     before_allreduce(40) = energy%cg_KH_inter_pro
     before_allreduce(41) = energy%cg_exv
+    before_allreduce(42) = energy%tis_lstack
 
-    call mpi_allreduce(before_allreduce, after_allreduce, 41, &
+    call mpi_allreduce(before_allreduce, after_allreduce, 42, &
                        mpi_wp_real,  mpi_sum,                 &
                        mpi_comm_country, ierror)
 
@@ -4718,6 +4719,7 @@ contains
     energy%cg_IDR_KH          = after_allreduce(39)
     energy%cg_KH_inter_pro    = after_allreduce(40)
     energy%cg_exv             = after_allreduce(41)
+    energy%tis_lstack         = after_allreduce(42)
 
     return
 

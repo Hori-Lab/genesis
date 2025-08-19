@@ -56,7 +56,7 @@ contains
     real(wp),                intent(inout) :: estack
 
     ! local variables
-    integer                  :: i, ithread 
+    integer                  :: i, id 
     integer                  :: i1, i2, i3, i4, i5, i6, i7
     integer                  :: istart, iend
     real(wp)                 :: v21(1:3), v34(1:3), v54(1:3), v56(1:3), v76(1:3)
@@ -135,8 +135,8 @@ contains
 
     ! calculation of local stacking energy and gradient
     !
-    !$omp parallel do default(none)                    &
-    !$omp private(ithread, i1, i2, i3, i4, i5, i6, i7, &
+    !$omp parallel default(none)                    &
+    !$omp private(id, i1, i2, i3, i4, i5, i6, i7, &
     !$omp         v21, v34, v54, v56, v76,             &
     !$omp         ediv, dist, ddist, dih, d,           &
     !$omp         f_i, f_l, for,                       &
@@ -146,9 +146,14 @@ contains
     !$omp         m, n, dnn, dmm, u0)                  &
     !$omp shared(istart, iend, Kr, Kphi1, Kphi2,       &
     !$omp        r0, phi10, phi20, coord, list,        &
-    !$omp        h, s, Tm, sol_T, force)               &
+    !$omp        h, s, Tm, sol_T, force, nthread)      &
     !$omp reduction(+:estack) reduction(+:virial)
-    do i = istart, iend
+#ifdef OMP
+    id = omp_get_thread_num()
+#else
+    id = 0
+#endif
+    do i = istart+id, iend, nthread
 
       i1 = list(1, i)
       i2 = list(2, i)
@@ -267,21 +272,16 @@ contains
       !  virial(j,j) = virial(j,j) - vtmp
       !end do
 
-#ifdef OMP
-      ithread = omp_get_thread_num() + 1
-#else
-      ithread = 1
-#endif
-      force(1:3, i1, ithread) = force(1:3, i1, ithread) + for(1:3, 1)
-      force(1:3, i2, ithread) = force(1:3, i2, ithread) + for(1:3, 2)
-      force(1:3, i3, ithread) = force(1:3, i3, ithread) + for(1:3, 3)
-      force(1:3, i4, ithread) = force(1:3, i4, ithread) + for(1:3, 4)
-      force(1:3, i5, ithread) = force(1:3, i5, ithread) + for(1:3, 5)
-      force(1:3, i6, ithread) = force(1:3, i6, ithread) + for(1:3, 6)
-      force(1:3, i7, ithread) = force(1:3, i7, ithread) + for(1:3, 7)
+      force(1:3, i1, id+1) = force(1:3, i1, id+1) + for(1:3, 1)
+      force(1:3, i2, id+1) = force(1:3, i2, id+1) + for(1:3, 2)
+      force(1:3, i3, id+1) = force(1:3, i3, id+1) + for(1:3, 3)
+      force(1:3, i4, id+1) = force(1:3, i4, id+1) + for(1:3, 4)
+      force(1:3, i5, id+1) = force(1:3, i5, id+1) + for(1:3, 5)
+      force(1:3, i6, id+1) = force(1:3, i6, id+1) + for(1:3, 6)
+      force(1:3, i7, id+1) = force(1:3, i7, id+1) + for(1:3, 7)
     end do
-    !$omp end parallel do
 
+    !$omp end parallel
     call timer(TimerTISLocalStack, TimerOff)
 
     return
@@ -317,7 +317,7 @@ contains
     real(wp),                intent(inout) :: estack
 
     ! local variables
-    integer                  :: i, ithread
+    integer                  :: i, id
     integer                  :: i1, i2, i3, i4, i5, i6, i7
     integer                  :: istart, iend
     real(wp)                 :: v21(1:3), v34(1:3), v54(1:3), v56(1:3), v76(1:3)
@@ -332,7 +332,7 @@ contains
     real(wp)                 :: m(3), n(3)
     real(wp)                 :: dnn, dmm
     real(wp)                 :: sol_T, u0
-    real(wp)                 :: bsize(3), half_bsize(3)
+    real(wp)                 :: bsize(3), inv_bsize(3)
 
     integer,         pointer :: list(:,:)
     real(wp),        pointer :: h(:), s(:), Tm(:)
@@ -398,12 +398,12 @@ contains
     bsize(1) = boundary%box_size_x
     bsize(2) = boundary%box_size_y
     bsize(3) = boundary%box_size_z
-    half_bsize(1:3) = 0.5_wp * bsize(1:3)
+    inv_bsize = 1.0_wp/bsize(1:3)
 
     ! calculation of local stacking energy and gradient
     !
-    !$omp parallel do default(none)                    &
-    !$omp private(ithread, i1, i2, i3, i4, i5, i6, i7, &
+    !$omp parallel default(none)                    &
+    !$omp private(id, i1, i2, i3, i4, i5, i6, i7,      &
     !$omp         v21, v34, v54, v56, v76,             &
     !$omp         ediv, dist, ddist, dih, d,           &
     !$omp         f_i, f_l, for,                       &
@@ -413,9 +413,15 @@ contains
     !$omp         m, n, dnn, dmm, u0)                  &
     !$omp shared(istart, iend, Kr, Kphi1, Kphi2,       &
     !$omp        r0, phi10, phi20, coord, list,        &
-    !$omp        h, s, Tm, sol_T, force)               &
+    !$omp        h, s, Tm, sol_T, force, inv_bsize,    &
+    !$omp        nthread, bsize)                       &
     !$omp reduction(+:estack) reduction(+:virial)
-    do i = istart, iend
+#ifdef OMP
+    id = omp_get_thread_num()
+#else
+    id = 0
+#endif
+    do i = istart+id, iend, nthread
 
       i1 = list(1, i)
       i2 = list(2, i)
@@ -425,11 +431,20 @@ contains
       i6 = list(6, i)
       i7 = list(7, i)
 
-      v21(1:3) = vpbc(coord(1:3, i2) - coord(1:3, i1))
-      v34(1:3) = vpbc(coord(1:3, i3) - coord(1:3, i4))
-      v54(1:3) = vpbc(coord(1:3, i5) - coord(1:3, i4))
-      v56(1:3) = vpbc(coord(1:3, i5) - coord(1:3, i6))
-      v76(1:3) = vpbc(coord(1:3, i7) - coord(1:3, i6))
+      v21(1:3) = coord(1:3, i2) - coord(1:3, i1)
+      v21(1:3) = v21(1:3) - bsize(1:3)*anint(v21(1:3)*inv_bsize(1:3))
+
+      v34(1:3) = coord(1:3, i3) - coord(1:3, i4)
+      v34(1:3) = v34(1:3) - bsize(1:3)*anint(v34(1:3)*inv_bsize(1:3))
+
+      v54(1:3) = coord(1:3, i5) - coord(1:3, i4)
+      v54(1:3) = v54(1:3) - bsize(1:3)*anint(v54(1:3)*inv_bsize(1:3))
+
+      v56(1:3) = coord(1:3, i5) - coord(1:3, i6)
+      v56(1:3) = v56(1:3) - bsize(1:3)*anint(v56(1:3)*inv_bsize(1:3))
+
+      v76(1:3) = coord(1:3, i7) - coord(1:3, i6)
+      v76(1:3) = v76(1:3) - bsize(1:3)*anint(v76(1:3)*inv_bsize(1:3))
 
       ediv = 1.0e0_wp
 
@@ -467,7 +482,7 @@ contains
          d = d + 2*PI
       endif
       ediv = ediv + Kphi1(i) * d**2
-
+      
       f_i(:) = + 2.0e0_wp * Kphi1(i) * d * abs54 / dmm * m(:)
       f_l(:) = - 2.0e0_wp * Kphi1(i) * d * abs54 / dnn * n(:)
 
@@ -534,51 +549,24 @@ contains
       !  virial(j,j) = virial(j,j) - vtmp
       !end do
 
-#ifdef OMP
-      ithread = omp_get_thread_num() + 1
-#else
-      ithread = 1
-#endif
-      force(1:3, i1, ithread) = force(1:3, i1, ithread) + for(1:3, 1)
-      force(1:3, i2, ithread) = force(1:3, i2, ithread) + for(1:3, 2)
-      force(1:3, i3, ithread) = force(1:3, i3, ithread) + for(1:3, 3)
-      force(1:3, i4, ithread) = force(1:3, i4, ithread) + for(1:3, 4)
-      force(1:3, i5, ithread) = force(1:3, i5, ithread) + for(1:3, 5)
-      force(1:3, i6, ithread) = force(1:3, i6, ithread) + for(1:3, 6)
-      force(1:3, i7, ithread) = force(1:3, i7, ithread) + for(1:3, 7)
+      force(1:3, i1, id+1) = force(1:3, i1, id+1) + for(1:3, 1)
+      force(1:3, i2, id+1) = force(1:3, i2, id+1) + for(1:3, 2)
+      force(1:3, i3, id+1) = force(1:3, i3, id+1) + for(1:3, 3)
+      force(1:3, i4, id+1) = force(1:3, i4, id+1) + for(1:3, 4)
+      force(1:3, i5, id+1) = force(1:3, i5, id+1) + for(1:3, 5)
+      force(1:3, i6, id+1) = force(1:3, i6, id+1) + for(1:3, 6)
+      force(1:3, i7, id+1) = force(1:3, i7, id+1) + for(1:3, 7)
 
     end do
-    !$omp end parallel do
+    !$omp end parallel
 
     call timer(TimerTISLocalStack, TimerOff)
 
     return
 
-    contains
-
-    pure function vpbc(v)
-      real(wp) :: vpbc(3)
-      real(wp), intent(in) :: v(3)
-
-      vpbc(1:3) = v(1:3)
-      if (v(1) > half_bsize(1)) then
-        vpbc(1) = v(1) - bsize(1)
-      else if (v(1) < -half_bsize(1)) then
-        vpbc(1) = v(1) + bsize(1)
-      end if
-      if (v(2) > half_bsize(2)) then
-        vpbc(2) = v(2) - bsize(2)
-      else if (v(2) < -half_bsize(2)) then
-        vpbc(2) = v(2) + bsize(2)
-      end if
-      if (v(3) > half_bsize(3)) then
-        vpbc(3) = v(3) - bsize(3)
-      else if (v(3) < -half_bsize(3)) then
-        vpbc(3) = v(3) + bsize(3)
-      end if
-    end function vpbc
 
   end subroutine compute_energy_tis_lstack_pbc
+
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !
@@ -781,7 +769,6 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
 
     a = enefunc%tis_mwca_a
     a2 = a*a
-
     ! calculate energy and gradient
     !
     !$omp parallel default(none)                                    &
@@ -851,7 +838,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
           dv_dr = abs(12.0e0_wp * eps * (adr2*adr4*adr8 - adr8) * dr / a2 / dist)
 
           if (dv_dr > 50.0_wp) then
-            dv_dr = 50.0_wp
+            ! dv_dr = 50.0_wp
           end if
 
           grad(1:3) = dv_dr * dij(1:3)
