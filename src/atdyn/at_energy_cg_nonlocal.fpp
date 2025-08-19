@@ -2797,7 +2797,7 @@ contains
     real(wp)                  :: ele_tmp_sol_T, ele_tmp_sol_C
     real(wp)                  :: grad_coef_ele, grad(3)
     real(wp)                  :: e_tmp_ele
-    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.4008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.40008e0_wp  ! i_diele=1
     real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
     real(wp)                  :: Tc
 
@@ -2986,7 +2986,7 @@ contains
     real(wp)          :: grad_coef_ele, grad(3)
     real(wp)          :: e_tmp_ele
 
-    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.4008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.40008e0_wp  ! i_diele=1
     real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
     real(wp)                  :: Tc
     !

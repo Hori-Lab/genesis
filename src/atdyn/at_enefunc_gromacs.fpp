@@ -1706,7 +1706,7 @@ contains
     integer              :: alloc_stat
 
     real(wp)             :: lb, kboltz_unit, length_per_unit, eps, Tc, ek
-    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.4008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.40008e0_wp  ! i_diele=1
     real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
 
     ! --------------------
