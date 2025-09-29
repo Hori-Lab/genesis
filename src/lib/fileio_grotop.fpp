@@ -270,51 +270,93 @@ module fileio_grotop_mod
     real(wp)                       :: phi20      = 0.0_wp
   end type s_tis_lstack
 
+  type, public :: s_tis_hb_dist
+    integer                        :: ihb           = 0
+    integer                        :: i_atom        = 0
+    integer                        :: j_atom        = 0
+    real(wp)                       :: U0            = 0_wp
+    real(wp)                       :: eq            = 0_wp
+    real(wp)                       :: coef          = 0_wp
+    integer                        :: nHB           = 0
+  end type s_tis_hb_dist
+
+  type, public :: s_tis_hb_angle
+    integer                        :: ihb           = 0
+    integer                        :: i_atom        = 0
+    integer                        :: j_atom        = 0
+    integer                        :: i1_atom       = 0
+    integer                        :: j1_atom       = 0
+    real(wp)                       :: ang1          = 0_wp
+    real(wp)                       :: ang2          = 0_wp
+    real(wp)                       :: coef          = 0_wp
+  end type s_tis_hb_angle
+
+  type, public :: s_tis_hb_dihedral
+    integer                        :: ihb           = 0
+    integer                        :: i_atom        = 0
+    integer                        :: j_atom        = 0
+    integer                        :: i1_atom       = 0
+    integer                        :: j1_atom       = 0
+    integer                        :: i2_atom       = 0
+    integer                        :: j2_atom       = 0
+    real(wp)                       :: dih           = 0_wp
+    real(wp)                       :: dih1          = 0_wp
+    real(wp)                       :: dih2          = 0_wp
+    real(wp)                       :: coef          = 0_wp
+  end type s_tis_hb_dihedral
+
   ! molecule definition data
   type, public :: s_grotop_mol
-    integer                        :: num_atoms     = 0
-    integer                        :: num_bonds     = 0
-    integer                        :: num_angls     = 0
-    integer                        :: num_dihes     = 0
-    integer                        :: num_cmaps     = 0
-    integer                        :: num_excls     = 0
-    integer                        :: num_constrs   = 0
-    integer                        :: num_pairs     = 0
-    integer                        :: num_vsites2   = 0
-    integer                        :: num_vsites3   = 0
-    integer                        :: num_vsites4   = 0
-    integer                        :: num_vsitesn   = 0
-    integer                        :: num_posress   = 0
-    integer                        :: num_mcontacts = 0
-    integer                        :: num_morph_bb  = 0
-    integer                        :: num_morph_sc  = 0
-    integer                        :: num_pwmcos    = 0
-    integer                        :: num_pwmcosns  = 0
-    integer                        :: num_idr_hps   = 0
-    integer                        :: num_idr_kh    = 0
-    integer                        :: num_tis_lstack= 0
-    type(s_atom),      allocatable :: atoms(:)
-    type(s_bond),      allocatable :: bonds(:)
-    type(s_angl),      allocatable :: angls(:)
-    type(s_dihe),      allocatable :: dihes(:)
-    type(s_cmap),      allocatable :: cmaps(:)
-    type(s_excl),      allocatable :: excls(:)
-    type(s_constr),    allocatable :: constrs(:)
-    type(s_pair),      allocatable :: pairs(:)
-    type(s_settles)                :: settles
-    type(s_vsite2),    allocatable :: vsites2(:)
-    type(s_vsite3),    allocatable :: vsites3(:)
-    type(s_vsite4),    allocatable :: vsites4(:)
-    type(s_vsiten),    allocatable :: vsitesn(:)
-    type(s_posres),    allocatable :: posress(:)
-    type(s_mcont),     allocatable :: mcontact(:)
-    type(s_morph_pair),allocatable :: morph_bb(:)
-    type(s_morph_pair),allocatable :: morph_sc(:)
-    type(s_pwmcos),    allocatable :: pwmcos(:)
-    type(s_pwmcosns),  allocatable :: pwmcosns(:)
-    type(s_idr_hps),   allocatable :: idr_hps(:)
-    type(s_idr_kh),    allocatable :: idr_kh(:)
-    type(s_tis_lstack),allocatable :: tislstacks(:)
+    integer                              :: num_atoms          = 0
+    integer                              :: num_bonds          = 0
+    integer                              :: num_angls          = 0
+    integer                              :: num_dihes          = 0
+    integer                              :: num_cmaps          = 0
+    integer                              :: num_excls          = 0
+    integer                              :: num_constrs        = 0
+    integer                              :: num_pairs          = 0
+    integer                              :: num_vsites2        = 0
+    integer                              :: num_vsites3        = 0
+    integer                              :: num_vsites4        = 0
+    integer                              :: num_vsitesn        = 0
+    integer                              :: num_posress        = 0
+    integer                              :: num_mcontacts      = 0
+    integer                              :: num_morph_bb       = 0
+    integer                              :: num_morph_sc       = 0
+    integer                              :: num_pwmcos         = 0
+    integer                              :: num_pwmcosns       = 0
+    integer                              :: num_idr_hps        = 0
+    integer                              :: num_idr_kh         = 0
+    integer                              :: num_tis_lstack     = 0
+    integer                              :: num_tis_hb_dist    = 0
+    integer                              :: num_tis_hb_angle   = 0
+    integer                              :: num_tis_hb_dihedral= 0
+    type(s_atom),            allocatable :: atoms(:)
+    type(s_bond),            allocatable :: bonds(:)
+    type(s_angl),            allocatable :: angls(:)
+    type(s_dihe),            allocatable :: dihes(:)
+    type(s_cmap),            allocatable :: cmaps(:)
+    type(s_excl),            allocatable :: excls(:)
+    type(s_constr),          allocatable :: constrs(:)
+    type(s_pair),            allocatable :: pairs(:)
+    ! maxfind: check comma below
+    type(s_settles)                      :: settles
+    type(s_vsite2),          allocatable :: vsites2(:)
+    type(s_vsite3),          allocatable :: vsites3(:)
+    type(s_vsite4),          allocatable :: vsites4(:)
+    type(s_vsiten),          allocatable :: vsitesn(:)
+    type(s_posres),          allocatable :: posress(:)
+    type(s_mcont),           allocatable :: mcontact(:)
+    type(s_morph_pair),      allocatable :: morph_bb(:)
+    type(s_morph_pair),      allocatable :: morph_sc(:)
+    type(s_pwmcos),          allocatable :: pwmcos(:)
+    type(s_pwmcosns),        allocatable :: pwmcosns(:)
+    type(s_idr_hps),         allocatable :: idr_hps(:)
+    type(s_idr_kh),          allocatable :: idr_kh(:)
+    type(s_tis_lstack),      allocatable :: tislstacks(:)
+    type(s_tis_hb_dist),     allocatable :: tishbdists(:)
+    type(s_tis_hb_angle),    allocatable :: tishbangles(:)
+    type(s_tis_hb_dihedral), allocatable :: tishbdihedrals(:)
   end type s_grotop_mol
 
 
@@ -664,27 +706,30 @@ module fileio_grotop_mod
   end type s_grotop
 
   ! parameters for TOP molecule structure allocatable variables
-  integer,      public, parameter :: GMGroMolAtom     = 101
-  integer,      public, parameter :: GMGroMolBond     = 102
-  integer,      public, parameter :: GMGroMolAngl     = 103
-  integer,      public, parameter :: GMGroMolDihe     = 104
-  integer,      public, parameter :: GMGroMolCmap     = 105
-  integer,      public, parameter :: GMGroMolExcl     = 106
-  integer,      public, parameter :: GMGroMolConstr   = 107
-  integer,      public, parameter :: GMGroMolPair     = 108
-  integer,      public, parameter :: GMGroMolVsites2  = 109
-  integer,      public, parameter :: GMGroMolVsites3  = 110
-  integer,      public, parameter :: GMGroMolVsites4  = 111
-  integer,      public, parameter :: GMGroMolVsitesn  = 112
-  integer,      public, parameter :: GMGroMolPosres   = 113
-  integer,      public, parameter :: GMGroMolMcont    = 114
-  integer,      public, parameter :: GMGroMolMorphBB  = 115
-  integer,      public, parameter :: GMGroMolMorphSC  = 116
-  integer,      public, parameter :: GMGroMolPWMcos   = 117
-  integer,      public, parameter :: GMGroMolPWMcosns = 118
-  integer,      public, parameter :: GMGroMolIDRHPS   = 119
-  integer,      public, parameter :: GMGroMolIDRKH    = 120
-  integer,      public, parameter :: GMGroMolTISLStack= 121
+  integer,      public, parameter :: GMGroMolAtom         = 101
+  integer,      public, parameter :: GMGroMolBond         = 102
+  integer,      public, parameter :: GMGroMolAngl         = 103
+  integer,      public, parameter :: GMGroMolDihe         = 104
+  integer,      public, parameter :: GMGroMolCmap         = 105
+  integer,      public, parameter :: GMGroMolExcl         = 106
+  integer,      public, parameter :: GMGroMolConstr       = 107
+  integer,      public, parameter :: GMGroMolPair         = 108
+  integer,      public, parameter :: GMGroMolVsites2      = 109
+  integer,      public, parameter :: GMGroMolVsites3      = 110
+  integer,      public, parameter :: GMGroMolVsites4      = 111
+  integer,      public, parameter :: GMGroMolVsitesn      = 112
+  integer,      public, parameter :: GMGroMolPosres       = 113
+  integer,      public, parameter :: GMGroMolMcont        = 114
+  integer,      public, parameter :: GMGroMolMorphBB      = 115
+  integer,      public, parameter :: GMGroMolMorphSC      = 116
+  integer,      public, parameter :: GMGroMolPWMcos       = 117
+  integer,      public, parameter :: GMGroMolPWMcosns     = 118
+  integer,      public, parameter :: GMGroMolIDRHPS       = 119
+  integer,      public, parameter :: GMGroMolIDRKH        = 120
+  integer,      public, parameter :: GMGroMolTISLStack    = 121
+  integer,      public, parameter :: GMGroMolTISHBDist    = 122
+  integer,      public, parameter :: GMGroMolTISHBAngle   = 123
+  integer,      public, parameter :: GMGroMolTISHBDihedral= 124
 
   ! parameters for TOP structure allocatable variables
   integer,      public, parameter :: GroTopAtomType      = 1
@@ -772,6 +817,9 @@ module fileio_grotop_mod
   integer,     private, parameter :: DTISLocalStack        = 50
   integer,     private, parameter :: DTISmWCAMolPairs      = 51
   integer,     private, parameter :: DTISmWCAAtomTypes     = 52
+  integer,     private, parameter :: DTISHBDist            = 53
+  integer,     private, parameter :: DTISHBAngle           = 54
+  integer,     private, parameter :: DTISHBDihedral        = 55
 
   ! parameters
   logical,     private, parameter :: VerboseOn        = .false.
@@ -846,6 +894,9 @@ module fileio_grotop_mod
   private :: read_tis_lstack
   private :: read_tis_mwca_mol_pairs
   private :: read_tis_mwca_types
+  private :: read_tis_hb_dist
+  private :: read_tis_hb_angle
+  private :: read_tis_hb_dihedral
 
   private :: write_grotop
   private :: write_defaults
@@ -1111,28 +1162,30 @@ contains
     type(s_grotop_mol),  intent(inout) :: gromol
 
 
-    gromol%num_atoms     = 0
-    gromol%num_bonds     = 0
-    gromol%num_angls     = 0
-    gromol%num_dihes     = 0
-    gromol%num_cmaps     = 0
-    gromol%num_excls     = 0
-    gromol%num_constrs   = 0
-    gromol%num_pairs     = 0
-    gromol%num_vsites2   = 0
-    gromol%num_vsites3   = 0
-    gromol%num_vsites4   = 0
-    gromol%num_vsitesn   = 0
-    gromol%num_posress   = 0
-    gromol%num_mcontacts = 0
-    gromol%num_morph_bb  = 0
-    gromol%num_morph_sc  = 0
-    gromol%num_pwmcos    = 0
-    gromol%num_pwmcosns  = 0
-    gromol%num_idr_hps   = 0
-    gromol%num_idr_kh    = 0
-    gromol%num_tis_lstack= 0
-
+    gromol%num_atoms              = 0
+    gromol%num_bonds              = 0
+    gromol%num_angls              = 0
+    gromol%num_dihes              = 0
+    gromol%num_cmaps              = 0
+    gromol%num_excls              = 0
+    gromol%num_constrs            = 0
+    gromol%num_pairs              = 0
+    gromol%num_vsites2            = 0
+    gromol%num_vsites3            = 0
+    gromol%num_vsites4            = 0
+    gromol%num_vsitesn            = 0
+    gromol%num_posress            = 0
+    gromol%num_mcontacts          = 0
+    gromol%num_morph_bb           = 0
+    gromol%num_morph_sc           = 0
+    gromol%num_pwmcos             = 0
+    gromol%num_pwmcosns           = 0
+    gromol%num_idr_hps            = 0
+    gromol%num_idr_kh             = 0
+    gromol%num_tis_lstack         = 0
+    gromol%num_tis_hb_dist        = 0
+    gromol%num_tis_hb_angle       = 0
+    gromol%num_tis_hb_dihedral    = 0
     return
 
   end subroutine init_grotop_mol
@@ -1969,6 +2022,9 @@ contains
     type(s_idr_hps),         allocatable   :: idr_hps(:)
     type(s_idr_kh),          allocatable   :: idr_kh(:)
     type(s_tis_lstack),      allocatable   :: tislstacks(:)
+    type(s_tis_hb_dist),     allocatable   :: tishbdists(:)
+    type(s_tis_hb_angle),    allocatable   :: tishbangles(:)
+    type(s_tis_hb_dihedral), allocatable   :: tishbdihedrals(:)
 
     select case(variable)
 
@@ -2589,6 +2645,93 @@ contains
             call error_msg_alloc
       end if
 
+    case(GMGroMolTISHBDist)
+      if (allocated(gromol%tishbdists)) then
+
+        old_size = size(gromol%tishbdists)
+        if (old_size == var_size) &
+            return
+        allocate(tishbdists(old_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        tishbdists(:) = gromol%tishbdists(:)
+        deallocate(gromol%tishbdists, stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_dealloc
+        allocate(gromol%tishbdists(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        if (old_size > var_size) then
+          gromol%tishbdists(1:var_size) = tishbdists(1:var_size)
+        else
+          gromol%tishbdists(1:old_size) = tishbdists(1:old_size)
+        end if
+        deallocate(tishbdists, stat = alloc_stat)
+      else
+        old_size = 0
+        allocate(gromol%tishbdists(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+      end if
+
+    case(GMGroMolTISHBAngle)
+      if (allocated(gromol%tishbangles)) then
+
+        old_size = size(gromol%tishbangles)
+        if (old_size == var_size) &
+            return
+        allocate(tishbangles(old_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        tishbangles(:) = gromol%tishbangles(:)
+        deallocate(gromol%tishbangles, stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_dealloc
+        allocate(gromol%tishbangles(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        if (old_size > var_size) then
+          gromol%tishbangles(1:var_size) = tishbangles(1:var_size)
+        else
+          gromol%tishbangles(1:old_size) = tishbangles(1:old_size)
+        end if
+        deallocate(tishbangles, stat = alloc_stat)
+      else
+        old_size = 0
+        allocate(gromol%tishbangles(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+      end if
+
+    case(GMGroMolTISHBDihedral)
+      if (allocated(gromol%tishbdihedrals)) then
+
+        old_size = size(gromol%tishbdihedrals)
+        if (old_size == var_size) &
+            return
+        allocate(tishbdihedrals(old_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        tishbdihedrals(:) = gromol%tishbdihedrals(:)
+        deallocate(gromol%tishbdihedrals, stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_dealloc
+        allocate(gromol%tishbdihedrals(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+        if (old_size > var_size) then
+          gromol%tishbdihedrals(1:var_size) = tishbdihedrals(1:var_size)
+        else
+          gromol%tishbdihedrals(1:old_size) = tishbdihedrals(1:old_size)
+        end if
+        deallocate(tishbdihedrals, stat = alloc_stat)
+      else
+        old_size = 0
+        allocate(gromol%tishbdihedrals(var_size), stat = alloc_stat)
+        if (alloc_stat /= 0) &
+            call error_msg_alloc
+      end if
+
     case default
 
       call error_msg('Realloc_Grotop_Mol> bad variable')
@@ -3096,6 +3239,15 @@ contains
       case (DTISLocalStack)
         call read_tis_lstack(file, grotop, gromol)
 
+      case (DTISHBDist)
+        call read_tis_hb_dist(file, grotop, gromol)
+
+      case (DTISHBAngle)
+        call read_tis_hb_angle(file, grotop, gromol)
+
+      case (DTISHBDihedral)
+        call read_tis_hb_dihedral(file, grotop, gromol)
+
       case (DTISmWCAMolPairs)
         call read_tis_mwca_mol_pairs(file, grotop)
 
@@ -3213,6 +3365,8 @@ contains
                'num_IDR_KH  = ', grotop%moltypes(i)%mol%num_idr_kh
           write(MsgOut,'(6X,A14,I10)') &
                'num_TIS_lst = ', grotop%moltypes(i)%mol%num_tis_lstack
+          write(MsgOut,'(6X,A14,I10)') &
+               'num_TIS_HB  = ', grotop%moltypes(i)%mol%num_tis_hb_dist
         else
           omit = .true.
         end if
@@ -7820,6 +7974,233 @@ contains
 
   end subroutine read_tis_lstack
 
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    read_tis_hb_dist
+  !> @brief        read section [ tis_hb_dist ]
+  !! @authors      MC
+  !! @param[in]    file   : file unit number
+  !! @param[inout] grotop : GROMACS TOP information
+  !! @param[inout] gromol : GROMACS ITP information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine read_tis_hb_dist(file, grotop, gromol)
+
+    ! formal arguments
+    integer,                 intent(in)    :: file
+    type(s_grotop),  target, intent(inout) :: grotop
+    type(s_grotop_mol),      pointer       :: gromol
+
+    ! local variables
+    integer                  :: i, cnt, old_cnt
+    character(MaxLine)       :: line
+    character(100)           :: error
+    character(3)             :: chr_tmp
+    integer :: ios
+    type(s_tis_hb_dist),    pointer :: hbdist
+
+    ! check count
+    cnt = check_section_count(file)
+
+    ! allocate memory
+    old_cnt = size_grotop_mol(gromol, GMGroMolTISHBDist)
+    call realloc_grotop_mol(gromol, GMGroMolTISHBDist, old_cnt+cnt)
+
+    if (VerboseOn .and. main_rank) then
+      write(MsgOut,'(" Read_Gromol> [ tis_hb_dist ] :"'// &
+           ',i5," (total:",i5,")")') cnt, old_cnt+cnt
+    end if
+
+    ! read data
+    !
+    do i = 1, cnt
+
+      hbdist => gromol%tishbdists(old_cnt+i)
+
+      if (.not. gro_pp_next_line(file, line, error)) &
+        goto 900
+
+      ! check format works, atoms section can vary from 2-6
+      if (match_format(line, 'NNNNNNN')) then
+
+        ! read(line,*,iostat=ios)          &
+        read(line,*)           &
+              hbdist%iHB,      &
+              hbdist%i_atom,   &
+              hbdist%j_atom,   &
+              hbdist%U0,       &
+              hbdist%eq,       &
+              hbdist%coef,     &
+              hbdist%nHB           
+
+      else
+      ! if (ios /= 0) then
+        goto 900
+      end if
+
+    end do
+
+    gromol%num_tis_hb_dist = size_grotop_mol(gromol, GMGroMolTISHBDist)
+
+    return
+
+900 call error_msg_grotop(file, 'Read_Grotop> read error. [ tis_hb_dist ]')
+
+  end subroutine read_tis_hb_dist
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    read_tis_hb_angle
+  !> @brief        read section [ tis_hb_angle ]
+  !! @authors      MC
+  !! @param[in]    file   : file unit number
+  !! @param[inout] grotop : GROMACS TOP information
+  !! @param[inout] gromol : GROMACS ITP information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine read_tis_hb_angle(file, grotop, gromol)
+
+    ! formal arguments
+    integer,                 intent(in)    :: file
+    type(s_grotop),  target, intent(inout) :: grotop
+    type(s_grotop_mol),      pointer       :: gromol
+
+    ! local variables
+    integer                  :: i, cnt, old_cnt
+    character(MaxLine)       :: line
+    character(100)           :: error
+    character(3)             :: chr_tmp
+
+    type(s_tis_hb_angle),    pointer :: hbangle
+
+    ! check count
+    cnt = check_section_count(file)
+
+    ! allocate memory
+    old_cnt = size_grotop_mol(gromol, GMGroMolTISHBAngle)
+    call realloc_grotop_mol(gromol, GMGroMolTISHBAngle, old_cnt+cnt)
+
+    if (VerboseOn .and. main_rank) then
+      write(MsgOut,'(" Read_Gromol> [ tis_hb_angle ] :"'// &
+           ',i5," (total:",i5,")")') cnt, old_cnt+cnt
+    end if
+
+    ! read data
+    !
+    do i = 1, cnt
+
+      hbangle => gromol%tishbangles(old_cnt+i)
+
+      if (.not. gro_pp_next_line(file, line, error)) &
+        goto 900
+
+      if (match_format(line, 'NNNNNNNN')) then
+
+        read(line,*)          &
+             hbangle%iHB,      &
+             hbangle%i_atom,   &
+             hbangle%j_atom,   &
+             hbangle%i1_atom,  &
+             hbangle%j1_atom,  &
+             hbangle%ang1,     &
+             hbangle%ang2,     &
+             hbangle%coef      
+
+      else
+
+        goto 900
+
+      end if
+
+    end do
+
+    gromol%num_tis_hb_angle = size_grotop_mol(gromol, GMGroMolTISHBAngle)
+
+    return
+
+900 call error_msg_grotop(file, 'Read_Grotop> read error. [ tis_hb_angle ]')
+
+  end subroutine read_tis_hb_angle
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    read_tis_hb_dihedral
+  !> @brief        read section [ tis_hb_dihedral ]
+  !! @authors      MC
+  !! @param[in]    file   : file unit number
+  !! @param[inout] grotop : GROMACS TOP information
+  !! @param[inout] gromol : GROMACS ITP information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine read_tis_hb_dihedral(file, grotop, gromol)
+
+    ! formal arguments
+    integer,                 intent(in)    :: file
+    type(s_grotop),  target, intent(inout) :: grotop
+    type(s_grotop_mol),      pointer       :: gromol
+
+    ! local variables
+    integer                  :: i, cnt, old_cnt
+    character(MaxLine)       :: line
+    character(100)           :: error
+    character(3)             :: chr_tmp
+
+    type(s_tis_hb_dihedral),    pointer :: hbdihedral
+
+    ! check count
+    cnt = check_section_count(file)
+
+    ! allocate memory
+    old_cnt = size_grotop_mol(gromol, GMGroMolTISHBDihedral)
+    call realloc_grotop_mol(gromol, GMGroMolTISHBDihedral, old_cnt+cnt)
+
+    if (VerboseOn .and. main_rank) then
+      write(MsgOut,'(" Read_Gromol> [ tis_hb_dihedral ] :"'// &
+           ',i5," (total:",i5,")")') cnt, old_cnt+cnt
+    end if
+
+    ! read data
+    !
+    do i = 1, cnt
+
+      hbdihedral => gromol%tishbdihedrals(old_cnt+i)
+
+      if (.not. gro_pp_next_line(file, line, error)) &
+        goto 900
+
+      if (match_format(line, 'NNNNNNNN')) then
+
+        read(line,*)              &
+             hbdihedral%iHB,      &
+             hbdihedral%i_atom,   &
+             hbdihedral%j_atom,   &
+             hbdihedral%i1_atom,  &
+             hbdihedral%j1_atom,  &
+             hbdihedral%i2_atom,  &
+             hbdihedral%j2_atom,  &
+             hbdihedral%dih,      &
+             hbdihedral%dih1,     &
+             hbdihedral%dih2,     &
+             hbdihedral%coef      
+
+      else
+
+        goto 900
+
+      end if
+
+    end do
+
+    gromol%num_tis_hb_dihedral = size_grotop_mol(gromol, GMGroMolTISHBDihedral)
+
+    return
+
+900 call error_msg_grotop(file, 'Read_Grotop> read error. [ tis_hb_dihedral ]')
+
+  end subroutine read_tis_hb_dihedral
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !
@@ -11062,6 +11443,12 @@ contains
       directive = DEzMembrane
     case ('tis_local_stack')
       directive = DTISLocalStack
+    case ('tis_hb_dist')
+      directive = DTISHBDist
+    case ('tis_hb_angle')
+      directive = DTISHBAngle
+    case ('tis_hb_dihedral')
+      directive = DTISHBDihedral
     case ('tis_mwca_chain_pairs')
       directive = DTISmWCAMolPairs
     case ('tis_mwca_atomtypes')
@@ -11376,6 +11763,27 @@ contains
     case(GMGroMolTISLStack)
       if (allocated(gromol%tislstacks)) then
         size_grotop_mol = size(gromol%tislstacks)
+      else
+        size_grotop_mol = 0
+      end if
+
+    case(GMGroMolTISHBDist)
+      if (allocated(gromol%tishbdists)) then
+        size_grotop_mol = size(gromol%tishbdists)
+      else
+        size_grotop_mol = 0
+      end if
+
+    case(GMGroMolTISHBAngle)
+      if (allocated(gromol%tishbangles)) then
+        size_grotop_mol = size(gromol%tishbangles)
+      else
+        size_grotop_mol = 0
+      end if
+
+    case(GMGroMolTISHBDihedral)
+      if (allocated(gromol%tishbdihedrals)) then
+        size_grotop_mol = size(gromol%tishbdihedrals)
       else
         size_grotop_mol = 0
       end if

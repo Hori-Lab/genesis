@@ -3450,7 +3450,8 @@ contains
       !$omp         dij, dij_pbc, rij_sqr,    &
       !$omp         i_chain_id, j_chain_id,   &
       !$omp         i_base_type, j_base_type, &
-      !$omp         pbc_int)                  &
+      !$omp         pbc_int, is_tis_phos_i,   &
+      !$omp         is_tis_phos_j, tis_pair)  &
       !$omp firstprivate(do_allocate)
       !
 #ifdef OMP
@@ -5196,7 +5197,7 @@ contains
   !======1=========2=========3=========4=========5=========6=========7=========8
   !
   !  Subroutine    update_pairlist_pbc_tis_mwca
-  !> @brief        update pairlist for CG electrostatics
+  !> @brief        update pairlist for CG tis mWCA exv
   !! @authors      NH
   !! @param[in]    enefunc   : potential energy functions information
   !! @param[in]    boundary  : boundary conditions information
@@ -5277,7 +5278,7 @@ contains
     nthread = 1
 #endif
 
-    pairlist%num_tis_mwca_calc(1:num_atoms,1:nthread) = 0
+    pairlist%num_tis_mwca_calc(1:n_tis,1:nthread) = 0
 
     if (pairlist%allocate_pbc_tis_mwca) then
       nloops      = 2
@@ -5317,7 +5318,7 @@ contains
 
       ! write(*,*) "maxfind, ntis, nthread", n_tis, nthread
 
-      do i_atom = 1, num_atoms - 1
+      do i_atom = 1, n_tis - 1
 
         if (mod(i_atom - 1, nproc_city * nthread) == my_id) then
 
@@ -5402,7 +5403,7 @@ contains
                 num_mwca(id) = num_mwca(id) + 1
 
                 if (.not. do_allocate) then
-                  pairlist%tis_mwca_list(num_mwca(id), id) = pbc_int + 27*j_atom
+                  pairlist%tis_mwca_list(num_mwca(id), id) = j_atom * 27 + pbc_int
                 end if
               end if
 

@@ -364,9 +364,9 @@ contains
                dynvars%energy%PWMcos             + &
                dynvars%energy%PWMcosns           + &
                dynvars%energy%tis_lstack         + &
+               dynvars%energy%tis_hb             + &
                totresene
 
-    ! write(*,*) 'stack_tis:', dynvars%energy%tis_lstack
 
     if (enefunc%dispersion_corr .ne. Disp_Corr_NONE) then
 
@@ -731,6 +731,12 @@ contains
       if (enefunc%tis_lstack_calc) then
         write(category(ifm),frmt) 'TIS_L_STACK'
         values(ifm) = dynvars%energy%tis_lstack
+        ifm = ifm+1
+      end if
+
+      if (enefunc%tis_hb_calc) then
+        write(category(ifm),frmt) 'TIS_HB'
+        values(ifm) = dynvars%energy%tis_hb
         ifm = ifm+1
       end if
 

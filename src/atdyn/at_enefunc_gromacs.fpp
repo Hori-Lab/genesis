@@ -51,6 +51,7 @@ module at_enefunc_gromacs_mod
   private :: setup_enefunc_cgDNA_base_stack
   private :: setup_enefunc_cgDNA_nonb
   private :: setup_enefunc_tis_lstack
+  private :: setup_enefunc_tis_hb
   private :: setup_enefunc_tis_mwca
   private :: setup_enefunc_cg_ele
   private :: setup_enefunc_cg_KH
@@ -145,6 +146,10 @@ contains
       ! CG TIS local stack
       !
       call setup_enefunc_tis_lstack(ene_info, grotop, molecule, enefunc)
+
+      ! CG TIS native hydrogen bonding
+      !
+      call setup_enefunc_tis_hb(ene_info, grotop, molecule, enefunc)
     end if
 
 
@@ -332,7 +337,7 @@ contains
            '  flex_dihed_ene  = ', enefunc%num_dihedflex
       end if
       if (enefunc%num_base_stack > 0)  then
-        write(MsgOut,'(A20,I10)')                         &
+        write(MsgOut,'(A20,I10)')                               &
            '  base_stack_ene  = ', enefunc%num_base_stack
       end if
       write(MsgOut,'(A20,I10)')                                 &
@@ -347,12 +352,16 @@ contains
            '  contact_ene     = ', enefunc%num_contacts
       end if
       if (enefunc%num_multi_contacts > 0) then
-        write(MsgOut,'(A20,I10)')                                 &
+        write(MsgOut,'(A20,I10)')                               &
            '  multi_contact   = ', enefunc%num_multi_contacts
       end if
       if (enefunc%num_tis_lstack > 0)  then
-        write(MsgOut,'(A20,I10)')                         &
+        write(MsgOut,'(A20,I10)')                               &
            '  tis_lstack      = ', enefunc%num_tis_lstack
+      end if
+      if (enefunc%num_tis_hb > 0) then
+        write(MsgOut,'(A20,I10)')                               &
+           '  tis_hb          = ', enefunc%num_tis_hb
       end if
       write(MsgOut,'(A20,I10,A20,I10)')                         &
            '  vsite2_ene      = ', enefunc%num_vsite2,          &
@@ -369,8 +378,8 @@ contains
            ' restraint_groups = ', enefunc%num_restraintgroups, &
            ' restraint_funcs  = ', enefunc%num_restraintfuncs
       if (enefunc%morph_flag) then
-        write(MsgOut,'(A20,I10,A20,I10)')                         &
-           '  morphing_bb     = ', enefunc%num_morph_bb,          &
+        write(MsgOut,'(A20,I10,A20,I10)')                       &
+           '  morphing_bb     = ', enefunc%num_morph_bb,        &
            '  morphing_sc     = ', enefunc%num_morph_sc
       end if
       write(MsgOut,'(A)') ' '
@@ -1706,7 +1715,7 @@ contains
     integer              :: alloc_stat
 
     real(wp)             :: lb, kboltz_unit, length_per_unit, eps, Tc, ek
-    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.40008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_A=87.740_wp, MM_B=-0.40008_wp  ! i_diele=1
     real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
 
     ! --------------------
@@ -1727,7 +1736,7 @@ contains
     sol_C = enefunc%cg_ele_sol_IC
     e_T   = 2.494e2_wp - 7.88e-1_wp * sol_T &
         + 7.2e-4_wp * sol_T * sol_T
-    a_C   = 1.0e0_wp - 2.551e-1_wp * sol_C  &
+    a_C   = 1.0_wp - 2.551e-1_wp * sol_C  &
         + 5.151e-2_wp * sol_C * sol_C       &
         - 6.889e-3_wp * sol_C * sol_C * sol_C
     ! real calculations moved to compute_energy_CG_ele
@@ -1754,7 +1763,7 @@ contains
     enefunc%cg_charge(1:n_atoms)   = molecule%charge(1:n_atoms)
 
     ! ! Adjust charge of RNA phosphate based on counterion condensation
-    ! Tc = sol_T - 273.15e0_wp
+    ! Tc = sol_T - 273.15_wp
     ! ek =  MM_A + MM_B*Tc + MM_C*Tc*Tc + MM_D*Tc*Tc*Tc
     ! enefunc%cg_dielec_const = ek
 
@@ -3760,6 +3769,91 @@ contains
     return
 
   end subroutine setup_enefunc_tis_lstack
+
+  !======1=========2=========3=========4=========5=========6=========7=========8
+  !
+  !  Subroutine    setup_enefunc_tis_hb
+  !> @brief        define hb terms in potential energy function
+  !! @authors      MC
+  !! @param[in]    ene_info : ENERGY section control parameters information
+  !! @param[in]    grotop   : GROMACS parameter topology information
+  !! @param[in]    molecule : molecule including molecular information
+  !! @param[inout] enefunc  : potential energy functions information
+  !
+  !======1=========2=========3=========4=========5=========6=========7=========8
+
+  subroutine setup_enefunc_tis_hb(ene_info, grotop, molecule, enefunc)
+
+    ! formal arguments
+    type(s_ene_info),        intent(in)    :: ene_info
+    type(s_grotop),          intent(in)    :: grotop
+    type(s_molecule),        intent(in)    :: molecule
+    type(s_enefunc),         intent(inout) :: enefunc
+
+    ! local variables
+    integer                  :: i, j, k
+    integer                  :: istart, iend
+    integer                  :: num_hb, natom, ioffset
+
+    type(s_grotop_mol), pointer :: gromol
+
+    num_hb = 0
+    do i = 1, grotop%num_molss
+      gromol => grotop%molss(i)%moltype%mol
+      do j = 1, grotop%molss(i)%count
+        do k = 1, gromol%num_tis_hb_dist ! dist, angle, dihedral should all be the same
+          num_hb = num_hb + 1
+        end do
+      end do
+    end do
+
+    call alloc_enefunc(enefunc, EneFuncTISHB, num_hb)
+    enefunc%num_tis_hb = num_hb
+    
+    num_hb = 0
+    natom  = 0
+
+    do i = 1, grotop%num_molss
+      gromol => grotop%molss(i)%moltype%mol
+      do j = 1, grotop%molss(i)%count
+        ioffset = natom
+        natom   = natom + gromol%num_atoms
+        do k = 1, gromol%num_tis_hb_dist ! dist, angle, dihedral should all be the same
+          num_hb = num_hb + 1
+          enefunc%tis_hb_ihb(num_hb)           = gromol%tishbdists(k)%ihb
+          enefunc%tis_hb_list(1, num_hb)       = gromol%tishbdihedrals(k)%i_atom  + ioffset
+          enefunc%tis_hb_list(2, num_hb)       = gromol%tishbdihedrals(k)%j_atom  + ioffset
+          enefunc%tis_hb_list(3, num_hb)       = gromol%tishbdihedrals(k)%i1_atom + ioffset
+          enefunc%tis_hb_list(4, num_hb)       = gromol%tishbdihedrals(k)%j1_atom + ioffset
+          enefunc%tis_hb_list(5, num_hb)       = gromol%tishbdihedrals(k)%i2_atom + ioffset
+          enefunc%tis_hb_list(6, num_hb)       = gromol%tishbdihedrals(k)%j2_atom + ioffset
+          enefunc%tis_hb_dist_U0(num_hb)       = gromol%tishbdists(k)%U0
+          enefunc%tis_hb_dist_eq(num_hb)       = gromol%tishbdists(k)%eq ! * 10.0_wp, currently itp file reads this in angstrom already     
+          enefunc%tis_hb_dist_coef(num_hb)     = gromol%tishbdists(k)%coef     
+          enefunc%tis_hb_nHB(num_hb)           = gromol%tishbdists(k)%nHB 
+          enefunc%tis_hb_angle_ang1(num_hb)    = gromol%tishbangles(k)%ang1 * RAD
+          enefunc%tis_hb_angle_ang2(num_hb)    = gromol%tishbangles(k)%ang2 * RAD
+          enefunc%tis_hb_angle_coef(num_hb)    = gromol%tishbangles(k)%coef
+          enefunc%tis_hb_dihedral_dih(num_hb)  = gromol%tishbdihedrals(k)%dih * RAD
+          enefunc%tis_hb_dihedral_dih1(num_hb) = gromol%tishbdihedrals(k)%dih1 * RAD
+          enefunc%tis_hb_dihedral_dih2(num_hb) = gromol%tishbdihedrals(k)%dih2 * RAD
+          enefunc%tis_hb_dihedral_coef(num_hb) = gromol%tishbdihedrals(k)%coef
+
+        end do
+      end do
+    end do
+
+    call get_loop_index(enefunc%num_tis_hb, istart, iend)
+    enefunc%istart_tis_hb = istart
+    enefunc%iend_tis_hb   = iend
+
+    if (num_hb > 0) then
+      enefunc%tis_hb_calc = .true.
+    endif
+
+    return
+
+  end subroutine setup_enefunc_tis_hb
 
   !======1=========2=========3=========4=========5=========6=========7=========8
   !

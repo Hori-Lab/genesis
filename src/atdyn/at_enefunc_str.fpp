@@ -340,9 +340,12 @@ module at_enefunc_str_mod
     integer                       :: num_pwmcosns_terms
     integer                       :: num_pwmcosns_resid
 
+    ! TIS RNA
     integer                       :: num_tis_lstack
     logical                       :: tis_lstack_calc
     logical                       :: tis_mwca_calc
+    integer                       :: num_tis_hb
+    logical                       :: tis_hb_calc
 
     integer                       :: istart_bond,          iend_bond
     integer                       :: istart_angle,         iend_angle
@@ -373,6 +376,7 @@ module at_enefunc_str_mod
     integer                       :: istart_base_stack,    iend_base_stack
     ! TIS
     integer                       :: istart_tis_lstack, iend_tis_lstack
+    integer                       :: istart_tis_hb, iend_tis_hb
 
     ! bond (size = num_bonds)
     integer,          allocatable :: bond_list(:,:)
@@ -518,6 +522,21 @@ module at_enefunc_str_mod
     real(wp),         allocatable :: tis_lstack_r0(:)
     real(wp),         allocatable :: tis_lstack_phi10(:)
     real(wp),         allocatable :: tis_lstack_phi20(:)
+
+    ! TIS native hydrogen bonding potential (size = num_tis_hb)
+    integer,          allocatable :: tis_hb_ihb(:) ! Probably not necessary to keep
+    integer,          allocatable :: tis_hb_list(:,:)
+    real(wp),         allocatable :: tis_hb_dist_U0(:)
+    real(wp),         allocatable :: tis_hb_dist_eq(:)
+    real(wp),         allocatable :: tis_hb_dist_coef(:)
+    integer,          allocatable :: tis_hb_nHB(:) ! Probably not necessary to keep
+    real(wp),         allocatable :: tis_hb_angle_ang1(:)
+    real(wp),         allocatable :: tis_hb_angle_ang2(:)
+    real(wp),         allocatable :: tis_hb_angle_coef(:)
+    real(wp),         allocatable :: tis_hb_dihedral_dih(:)
+    real(wp),         allocatable :: tis_hb_dihedral_dih1(:)
+    real(wp),         allocatable :: tis_hb_dihedral_dih2(:)
+    real(wp),         allocatable :: tis_hb_dihedral_coef(:)
 
     ! TIS modified Weeks-Chandler-Andersen (mwca)
     real(wp)                      :: tis_mwca_a
@@ -952,6 +971,7 @@ module at_enefunc_str_mod
   integer,      public, parameter :: EneFuncTISLocalStack = 56
   integer,      public, parameter :: EneFuncTISmwca       = 57
   integer,      public, parameter :: EneFuncTISmwcaType   = 58
+  integer,      public, parameter :: EneFuncTISHB         = 59
 
   ! parameters
   integer,      public, parameter :: ForcefieldCHARMM     = 1
@@ -1133,6 +1153,7 @@ contains
     enefunc%num_pwmcosns_terms      = 0
     enefunc%num_pwmcosns_resid      = 0
     enefunc%num_tis_lstack          = 0
+    enefunc%num_tis_hb              = 0
     
     enefunc%istart_bond             = 0
     enefunc%iend_bond               = 0
@@ -1174,6 +1195,8 @@ contains
     ! TIS
     enefunc%istart_tis_lstack       = 0
     enefunc%iend_tis_lstack         = 0
+    enefunc%istart_tis_hb           = 0
+    enefunc%iend_tis_hb             = 0
 
     enefunc%forcefield              = ForcefieldCHARMM
     enefunc%output_style            = OutputStyleCHARMM
@@ -1255,6 +1278,7 @@ contains
     enefunc%cg_KH_calc              = .false.
     enefunc%tis_lstack_calc         = .false.
     enefunc%tis_mwca_calc           = .false.
+    enefunc%tis_hb_calc             = .false.
 
     enefunc%gamd_use                = .false.
 
@@ -1949,6 +1973,55 @@ contains
       enefunc%tis_lstack_r0   (1:var_size     ) = 0.0_wp
       enefunc%tis_lstack_phi10(1:var_size     ) = 0.0_wp
       enefunc%tis_lstack_phi20(1:var_size     ) = 0.0_wp
+
+    case(EneFuncTISHB)
+      ! TIS Native Hydrogen Bonding
+      if (allocated(enefunc%tis_hb_list)) then
+        if (size(enefunc%tis_hb_list(1,:)) == var_size) return
+        deallocate(enefunc%tis_hb_ihb,           &
+                   enefunc%tis_hb_list,          &
+                   enefunc%tis_hb_dist_U0,       &
+                   enefunc%tis_hb_dist_eq,       &
+                   enefunc%tis_hb_dist_coef,     &
+                   enefunc%tis_hb_nHB,           &
+                   enefunc%tis_hb_angle_ang1,    &
+                   enefunc%tis_hb_angle_ang2,    &
+                   enefunc%tis_hb_angle_coef,    &
+                   enefunc%tis_hb_dihedral_dih,  &
+                   enefunc%tis_hb_dihedral_dih1, &
+                   enefunc%tis_hb_dihedral_dih2, &
+                   enefunc%tis_hb_dihedral_coef, &
+                   stat = dealloc_stat)
+      end if
+
+      allocate(enefunc%tis_hb_ihb(var_size),           &
+               enefunc%tis_hb_list(6,var_size),        &
+               enefunc%tis_hb_dist_U0(var_size),       &
+               enefunc%tis_hb_dist_eq(var_size),       &
+               enefunc%tis_hb_dist_coef(var_size),     &
+               enefunc%tis_hb_nHB(var_size),           &
+               enefunc%tis_hb_angle_ang1(var_size),    &
+               enefunc%tis_hb_angle_ang2(var_size),    &
+               enefunc%tis_hb_angle_coef(var_size),    &
+               enefunc%tis_hb_dihedral_dih(var_size),  &
+               enefunc%tis_hb_dihedral_dih1(var_size), &
+               enefunc%tis_hb_dihedral_dih2(var_size), &
+               enefunc%tis_hb_dihedral_coef(var_size), &
+               stat = alloc_stat)
+
+      enefunc%tis_hb_ihb          (1:var_size    ) = 0
+      enefunc%tis_hb_list         (1:6,1:var_size) = 0
+      enefunc%tis_hb_dist_U0      (1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_dist_eq      (1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_dist_coef    (1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_nHB          (1:var_size    ) = 0
+      enefunc%tis_hb_angle_ang1   (1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_angle_ang2   (1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_angle_coef   (1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_dihedral_dih (1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_dihedral_dih1(1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_dihedral_dih2(1:var_size    ) = 0.0_wp
+      enefunc%tis_hb_dihedral_coef(1:var_size    ) = 0.0_wp
 
     case(EneFuncTISmwca)
 
@@ -3480,6 +3553,24 @@ contains
                    stat = dealloc_stat)
       endif
 
+    case (EneFuncTISHB)
+      if (allocated(enefunc%tis_hb_list)) then
+        deallocate(enefunc%tis_hb_ihb,      &
+                   enefunc%tis_hb_list,          &
+                   enefunc%tis_hb_dist_U0,       &
+                   enefunc%tis_hb_dist_eq,       &
+                   enefunc%tis_hb_dist_coef,     &
+                   enefunc%tis_hb_nHB,           &
+                   enefunc%tis_hb_angle_ang1,    &
+                   enefunc%tis_hb_angle_ang2,    &
+                   enefunc%tis_hb_angle_coef,    &
+                   enefunc%tis_hb_dihedral_dih,  &
+                   enefunc%tis_hb_dihedral_dih1, &
+                   enefunc%tis_hb_dihedral_dih2, &
+                   enefunc%tis_hb_dihedral_coef, &
+                   stat = dealloc_stat)
+      end if
+
     case (EneFuncTISmwca)
 
       if (allocated(enefunc%tis_mwca_mol_pair)) then
@@ -3576,7 +3667,9 @@ contains
     call dealloc_enefunc(enefunc, EneFuncGamdRest)
     call dealloc_enefunc(enefunc, EneFuncCGIDRHPS)
     call dealloc_enefunc(enefunc, EneFuncCGIDRKH)
+    ! ~CG~ TIS RNA
     call dealloc_enefunc(enefunc, EneFuncTISLocalStack)
+    call dealloc_enefunc(enefunc, EneFuncTISHB)
     call dealloc_enefunc(enefunc, EneFuncTISmwca)
     call dealloc_enefunc(enefunc, EneFuncTISmwcaType)
 

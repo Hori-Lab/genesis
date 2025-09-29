@@ -877,9 +877,6 @@ contains
         bp_sigma     = param_bp_sigma   (type_B2)
         bp_epsilon   = param_bp_epsilon (type_B2)
 
-        ! write (*,*) " i: ", i_B2, " j: ", i_B4, type_B2, type_B4, bp_theta_1_0 / RAD, bp_theta_2_0 / RAD, bp_phi_1_0 / RAD
-        ! write (*,*) " i: ", i_B2, " j: ", i_B4, type_B2, type_B4, bp_sigma, bp_epsilon / JOU2CAL
-
         ! -----------------
         ! 1 -- 2 <== 4 -- 3
         ! -----------------
@@ -942,7 +939,6 @@ contains
         ene_coef_phi  =   0.5_wp * (1.0_wp + cos_dih_24 * cos(bp_phi_1_0) + sin_dih_24 * sin(bp_phi_1_0))
         grad_coef_phi = - 0.5_wp * (         sin_dih_24 * cos(bp_phi_1_0) - cos_dih_24 * sin(bp_phi_1_0))
 
-        ! write (*,*) "id=", my_id, " i: ", i_B2, " j: ", i_B4, cos_dih_24, sin_dih_24
 
         ! ============================================================
         ! basepairing interaction: energy/force calculation @@@@@@@...
@@ -2797,7 +2793,7 @@ contains
     real(wp)                  :: ele_tmp_sol_T, ele_tmp_sol_C
     real(wp)                  :: grad_coef_ele, grad(3)
     real(wp)                  :: e_tmp_ele
-    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.40008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_A=87.740_wp, MM_B=-0.40008_wp  ! i_diele=1
     real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
     real(wp)                  :: Tc
 
@@ -2828,7 +2824,7 @@ contains
     ele_tmp_sol_C = enefunc%cg_ele_sol_IC
     ele_tmp_e_T   = 2.494e2_wp - 7.88e-1_wp * ele_tmp_sol_T &
         + 7.2e-4_wp * ele_tmp_sol_T * ele_tmp_sol_T
-    ele_tmp_a_C   = 1.0e0_wp - 2.551e-1_wp * ele_tmp_sol_C  &
+    ele_tmp_a_C   = 1.0_wp - 2.551e-1_wp * ele_tmp_sol_C  &
         + 5.151e-2_wp * ele_tmp_sol_C * ele_tmp_sol_C       &
         - 6.889e-3_wp * ele_tmp_sol_C * ele_tmp_sol_C * ele_tmp_sol_C
     Tc = ele_tmp_sol_T - 273.15_wp
@@ -2908,8 +2904,6 @@ contains
 
         eele = eele + e_tmp_ele
 
-        ! write(*,*) 'ELE:',i,j, e_tmp_ele
-
         ! gradient
         !
         grad_coef_ele = e_tmp_ele * (inv_debye_length + inv_rij) * inv_rij
@@ -2926,7 +2920,6 @@ contains
           virial(1:3, l) = virial(1:3, l) - dij(1:3) * grad(l)
         end do
 
-        ! write (*,*) 'ELE:',i,j, eele, -grad(1:3), grad(1:3)
       end do
     end do
     !$omp end parallel
@@ -2986,7 +2979,7 @@ contains
     real(wp)          :: grad_coef_ele, grad(3)
     real(wp)          :: e_tmp_ele
 
-    real(wp), parameter ::  MM_A=87.740e0_wp, MM_B=-0.40008e0_wp  ! i_diele=1
+    real(wp), parameter ::  MM_A=87.740_wp, MM_B=-0.40008_wp  ! i_diele=1
     real(wp), parameter ::  MM_C=9.398e-4_wp, MM_D=-1.410e-6_wp  ! i_diele=1
     real(wp)                  :: Tc
     !
@@ -3029,7 +3022,7 @@ contains
     ele_tmp_sol_C = enefunc%cg_ele_sol_IC
     ele_tmp_e_T   = 2.494e2_wp - 7.88e-1_wp * ele_tmp_sol_T &
         + 7.2e-4_wp * ele_tmp_sol_T * ele_tmp_sol_T
-    ele_tmp_a_C   = 1.0e0_wp - 2.551e-1_wp * ele_tmp_sol_C  &
+    ele_tmp_a_C   = 1.0_wp - 2.551e-1_wp * ele_tmp_sol_C  &
         + 5.151e-2_wp * ele_tmp_sol_C * ele_tmp_sol_C       &
         - 6.889e-3_wp * ele_tmp_sol_C * ele_tmp_sol_C * ele_tmp_sol_C
     ! diele_const = ele_tmp_e_T * ele_tmp_a_C
@@ -3276,10 +3269,10 @@ contains
     !$omp         dij, rij_sqr,                        &
     !$omp         inv_rij_sqr, inv_rij_6th,            &
     !$omp         sig_over_rij_6th, sig_over_rij_12th, &
-    !$omp         grad_coef_hps, grad, ehps_tmp        &
-    !$omp         )                                    &
+    !$omp         grad_coef_hps, grad, ehps_tmp,       &
+    !$omp         epsilon)                             &
     !$omp shared(coord, my_city_rank, nproc_city,      &
-    !$omp        nthread, natom, epsilon, epsilon_tmp, &
+    !$omp        nthread, natom,  epsilon_tmp,         &
     !$omp        cutoff, cutoff_sqr,                   &
     !$omp        hps_list, num_hps_calc,               &
     !$omp        hps_sigma_half, hps_lambda_half,      &
@@ -3309,9 +3302,6 @@ contains
         lambda    = hps_lambda_half(i) + hps_lambda_half(j)
         epsilon   = epsilon_tmp
 
-          lambda    = hps_lambda_half(i) + hps_lambda_half(j)
-          epsilon   = epsilon_tmp
-
           ! if ((protein_residue(i) == 'LYS')) then
           !   lambda = 0.0_wp
           !   epsilon = 0.2_wp      
@@ -3324,12 +3314,13 @@ contains
           ! else if ((protein_residue(j) == 'ARG')) then
           !   lambda = 0.0_wp
           !   epsilon = 0.2_wp
-          ! else if ((protein_residue(i) == 'TP ')) then
-          !   lambda = 0.0_wp
-          !   epsilon = 0.2_wp       
-          ! else if ((protein_residue(j) == 'TP ')) then
-          !   lambda = 0.0_wp
-          !   epsilon = 0.2_wp      
+        if ((protein_residue(i) == 'TP ')) then
+          lambda = 0.0_wp
+          epsilon = 0.2_wp       
+        else if ((protein_residue(j) == 'TP ')) then
+          lambda = 0.0_wp
+          epsilon = 0.2_wp
+        end if     
           ! else if ((protein_residue(i) == 'TC ')) then
           !   lambda = 0.0_wp
           !   epsilon = 0.2_wp       
@@ -3357,153 +3348,153 @@ contains
           ! end if
 
           ! cation - pi interactions
-          if ((protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TYR') &
-          .or. (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'ARG')) then
-            lambda = 0.516366_wp
-            epsilon = epsilon_cationpi
+        if ((protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TYR') &
+        .or. (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'ARG')) then
+          lambda = 0.516366_wp
+          epsilon = epsilon_cationpi
 
-          else if ((protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TRP') &
-          .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'ARG')) then
-            lambda = 0.645980_wp
-            epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TRP') &
+        .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'ARG')) then
+          lambda = 0.645980_wp
+          epsilon = epsilon_cationpi
 
-          else if ((protein_residue(i) == 'ARG' .and. protein_residue(j) == 'PHE') &
-          .or.     (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'ARG')) then
-            lambda = 0.492368_wp
-            epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'ARG' .and. protein_residue(j) == 'PHE') &
+        .or.     (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'ARG')) then
+          lambda = 0.492368_wp
+          epsilon = epsilon_cationpi
 
-          else if ((protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TYR') &
-          .or.     (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'LYS')) then
-            lambda = 0.421865_wp
-            epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TYR') &
+        .or.     (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'LYS')) then
+          lambda = 0.421865_wp
+          epsilon = epsilon_cationpi
 
-          else if ((protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TRP') &
-          .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'LYS')) then
-            lambda = 0.508009_wp
-            epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TRP') &
+        .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'LYS')) then
+          lambda = 0.508009_wp
+          epsilon = epsilon_cationpi
 
-          else if ((protein_residue(i) == 'LYS' .and. protein_residue(j) == 'PHE') &
-          .or.     (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'LYS')) then
-            lambda = 0.389410_wp
-            epsilon = epsilon_cationpi
-          
-          ! RNA LYS
-          else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'LYS' ) &
-            .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TA ')) then
-            lambda = 0.694407_wp
-            epsilon = epsilon_cationpi
-          else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'LYS' ) &
-            .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TG ')) then
-            lambda = 1.0_wp
-            epsilon = epsilon_cationpi
-          else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'LYS' ) &
-            .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TC ')) then
-            lambda = 0.394051_wp
-            epsilon = epsilon_cationpi
-          else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'LYS' ) &
-            .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TU ')) then
-            lambda = 0.350123_wp
-            epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'LYS' .and. protein_residue(j) == 'PHE') &
+        .or.     (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'LYS')) then
+          lambda = 0.389410_wp
+          epsilon = epsilon_cationpi
+        
+        ! RNA LYS
+        else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'LYS' ) &
+          .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TA ')) then
+          lambda = 0.694407_wp
+          epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'LYS' ) &
+          .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TG ')) then
+          lambda = 1.0_wp
+          epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'LYS' ) &
+          .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TC ')) then
+          lambda = 0.394051_wp
+          epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'LYS' ) &
+          .or.   (protein_residue(i) == 'LYS' .and. protein_residue(j) == 'TU ')) then
+          lambda = 0.350123_wp
+          epsilon = epsilon_cationpi
 
-          ! RNA ARG
-          else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'ARG' ) &
-            .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TA ')) then
-            lambda = 0.687378_wp
-            epsilon = epsilon_cationpi
-          else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'ARG' ) &
-            .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TG ')) then
-            lambda = 0.810817_wp
-            epsilon = epsilon_cationpi
-          else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'ARG' ) &
-            .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TC ')) then
-            lambda = 0.631367_wp
-            epsilon = epsilon_cationpi
-          else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'ARG' ) &
-            .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TU ')) then
-            lambda = 0.667901_wp
-            epsilon = epsilon_cationpi
+        ! RNA ARG
+        else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'ARG' ) &
+          .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TA ')) then
+          lambda = 0.687378_wp
+          epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'ARG' ) &
+          .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TG ')) then
+          lambda = 0.810817_wp
+          epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'ARG' ) &
+          .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TC ')) then
+          lambda = 0.631367_wp
+          epsilon = epsilon_cationpi
+        else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'ARG' ) &
+          .or.   (protein_residue(i) == 'ARG' .and. protein_residue(j) == 'TU ')) then
+          lambda = 0.667901_wp
+          epsilon = epsilon_cationpi
 
 
-          ! aromatic interactions ff < yy < ww ? from MPIPI paper
-          else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'PHE') then
-            lambda = 0.424600_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TYR') then
-            lambda = 0.451205_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TRP') then
-            lambda = 0.537465_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'PHE') then
-            lambda = 0.451205_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TYR') then
-            lambda = 0.492055_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TRP') then
-            lambda = 0.554138_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'PHE') then
-            lambda = 0.537465_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TYR') then
-            lambda = 0.554138_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TRP') then
-            lambda = 0.636976_wp
-            epsilon = epsilon_aromatic
-            ! RNA PHE
-          else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'PHE' ) &
-            .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TA ')) then
-            lambda = 0.738406_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'PHE' ) &
-            .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TG ')) then
-            lambda = 0.818021_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'PHE' ) &
-            .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TC ')) then
-            lambda = 0.631367_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'PHE' ) &
-            .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TU ')) then
-            lambda = 0.682763_wp
-            epsilon = epsilon_aromatic
-            ! RNA TYR
-          else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'TYR' ) &
-            .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TA ')) then
-            lambda = 0.833903_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'TYR' ) &
-            .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TG ')) then
-            lambda = 0.88039_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'TYR' ) &
-            .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TC ')) then
-            lambda = 0.681409_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'TYR' ) &
-            .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TU ')) then
-            lambda = 0.708542_wp
-            epsilon = epsilon_aromatic
-            ! RNA TRP
-          else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'TRP' ) &
-            .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TA ')) then
-            lambda = 0.899535_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'TRP' ) &
-            .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TG ')) then
-            lambda = 0.989555_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'TRP' ) &
-            .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TC ')) then
-            lambda = 0.775163_wp
-            epsilon = epsilon_aromatic
-          else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'TRP' ) &
-            .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TU ')) then
-            lambda = 0.785815_wp
-            epsilon = epsilon_aromatic
-            ! add histidine?
+        ! aromatic interactions ff < yy < ww ? from MPIPI paper
+        else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'PHE') then  
+          lambda  = 0.424600_wp
+          epsilon = epsilon_aromatic
+          !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+        else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TYR') then  
+          lambda  = 0.492055_wp
+          epsilon = epsilon_aromatic
+          !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+        else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TRP') then  
+          lambda  = 0.636976_wp
+          epsilon = epsilon_aromatic
+          !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+        else if ((protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TYR') &
+        .or.     (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'PHE')) then
+          lambda  = 0.451205_wp
+          epsilon = epsilon_aromatic
+          !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+        else if ((protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TRP') &
+        .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'PHE')) then
+          lambda  = 0.537465_wp
+          epsilon = epsilon_aromatic
+          !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+        else if ((protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TRP') &
+        .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TYR')) then
+          lambda  = 0.554138_wp
+          epsilon = epsilon_aromatic
+
+          ! RNA PHE
+        else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'PHE' ) &
+          .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TA ')) then
+          lambda = 0.738406_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'PHE' ) &
+          .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TG ')) then
+          lambda = 0.818021_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'PHE' ) &
+          .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TC ')) then
+          lambda = 0.631367_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'PHE' ) &
+          .or.   (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TU ')) then
+          lambda = 0.682763_wp
+          epsilon = epsilon_aromatic
+          ! RNA TYR
+        else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'TYR' ) &
+          .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TA ')) then
+          lambda = 0.833903_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'TYR' ) &
+          .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TG ')) then
+          lambda = 0.88039_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'TYR' ) &
+          .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TC ')) then
+          lambda = 0.681409_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'TYR' ) &
+          .or.   (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TU ')) then
+          lambda = 0.708542_wp
+          epsilon = epsilon_aromatic
+          ! RNA TRP
+        else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'TRP' ) &
+          .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TA ')) then
+          lambda = 0.899535_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TG ' .and. protein_residue(j) == 'TRP' ) &
+          .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TG ')) then
+          lambda = 0.989555_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TC ' .and. protein_residue(j) == 'TRP' ) &
+          .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TC ')) then
+          lambda = 0.775163_wp
+          epsilon = epsilon_aromatic
+        else if ((protein_residue(i) == 'TU ' .and. protein_residue(j) == 'TRP' ) &
+          .or.   (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TU ')) then
+          lambda = 0.785815_wp
+          epsilon = epsilon_aromatic
+          ! add histidine?
         end if
 
         sigma     = hps_sigma_half(i) + hps_sigma_half(j)
@@ -3673,10 +3664,10 @@ contains
     !$omp         force_tmp, factor,                   &
     !$omp         virial_tmp, ehps_omp_tmp,            &
     !$omp         grad_coef_hps, grad, ehps_tmp,       &
-    !$omp         i_base_type, j_base_type             &
-    !$omp         )                                    &
+    !$omp         i_base_type, j_base_type,            &
+    !$omp         epsilon)                             &
     !$omp shared(coord, my_city_rank, nproc_city,      &
-    !$omp        nthread, n_idr, epsilon, epsilon_tmp, &
+    !$omp        nthread, n_idr,  epsilon_tmp,         &
     !$omp        cutoff, cutoff_sqr,                   &
     !$omp        hps_list, num_hps_calc,               &
     !$omp        hps_sigma_half, hps_lambda_half,      &
@@ -3741,12 +3732,13 @@ contains
           ! else if ((protein_residue(j) == 'ARG')) then
           !   lambda = 0.0_wp
           !   epsilon = 0.2_wp
-          ! else if ((protein_residue(i) == 'TP ')) then
-          !   lambda = 0.0_wp
-          !   epsilon = 0.2_wp       
-          ! else if ((protein_residue(j) == 'TP ')) then
-          !   lambda = 0.0_wp
-          !   epsilon = 0.2_wp      
+          if ((protein_residue(i) == 'TP ')) then
+            lambda = 0.0_wp
+            epsilon = 0.2_wp       
+          else if ((protein_residue(j) == 'TP ')) then
+            lambda = 0.0_wp
+            epsilon = 0.2_wp
+          end if      
           ! else if ((protein_residue(i) == 'TC ')) then
           !   lambda = 0.0_wp
           !   epsilon = 0.2_wp       
@@ -3842,32 +3834,31 @@ contains
 
 
           ! aromatic interactions ff < yy < ww ? from MPIPI paper
-          else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'PHE') then
-            lambda = 0.424600_wp
+          else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'PHE') then  
+            lambda  = 0.424600_wp
             epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TYR') then
-            lambda = 0.451205_wp
+            !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+          else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TYR') then  
+            lambda  = 0.492055_wp
             epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TRP') then
-            lambda = 0.537465_wp
+            !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+          else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TRP') then  
+            lambda  = 0.636976_wp
             epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'PHE') then
-            lambda = 0.451205_wp
+            !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+          else if ((protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TYR') &
+          .or.     (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'PHE')) then
+            lambda  = 0.451205_wp
             epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TYR') then
-            lambda = 0.492055_wp
+            !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+          else if ((protein_residue(i) == 'PHE' .and. protein_residue(j) == 'TRP') &
+          .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'PHE')) then
+            lambda  = 0.537465_wp
             epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TRP') then
-            lambda = 0.554138_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'PHE') then
-            lambda = 0.537465_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TYR') then
-            lambda = 0.554138_wp
-            epsilon = epsilon_aromatic
-          else if (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TRP') then
-            lambda = 0.636976_wp
+            !cg_IDR_HPS_para_epsilon(i,j) = 0.9_wp
+          else if ((protein_residue(i) == 'TYR' .and. protein_residue(j) == 'TRP') &
+          .or.     (protein_residue(i) == 'TRP' .and. protein_residue(j) == 'TYR')) then
+            lambda  = 0.554138_wp
             epsilon = epsilon_aromatic
             ! RNA PHE
           else if ((protein_residue(i) == 'TA ' .and. protein_residue(j) == 'PHE' ) &
@@ -3925,17 +3916,6 @@ contains
 
           sigma     = hps_sigma_half_i_tmp + hps_sigma_half(j)
           sigma_sqr = sigma * sigma
-
-          ! if ((protein_residue(i) == 'TA ' .or. protein_residue(j) == 'TA ' .or. &
-          !      protein_residue(i) == 'TG ' .or. protein_residue(j) == 'TG ' .or. &
-          !      protein_residue(i) == 'TC ' .or. protein_residue(j) == 'TC ' .or. &
-          !      protein_residue(i) == 'TU ' .or. protein_residue(j) == 'TU ' .or. &
-          !      protein_residue(i) == 'TS ' .or. protein_residue(j) == 'TS ' .or. &
-          !      protein_residue(i) == 'TP ' .or. protein_residue(j) == 'TP ')) then
-
-          ! write(*,*) 'res1:', protein_residue(i), 'res2:', protein_residue(j), epsilon, lambda, sigma
-
-          ! end if 
 
           dij(1)  = coord(1,j) - coor_i_tmp(1) + bsize(1) * real(i1, wp)
           dij(2)  = coord(2,j) - coor_i_tmp(2) + bsize(2) * real(i2, wp)

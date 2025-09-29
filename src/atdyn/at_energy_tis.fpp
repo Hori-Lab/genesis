@@ -28,6 +28,8 @@ module at_energy_tis_mod
   public  :: compute_energy_tis_lstack_pbc
   public  :: compute_energy_tis_mwca
   public  :: compute_energy_tis_mwca_pbc
+  public  :: compute_energy_tis_hb
+  public  :: compute_energy_tis_hb_pbc
 
 contains
 
@@ -169,14 +171,14 @@ contains
       v56(1:3) = coord(1:3, i5) - coord(1:3, i6)
       v76(1:3) = coord(1:3, i7) - coord(1:3, i6)
 
-      ediv = 1.0e0_wp
+      ediv = 1.0_wp
 
       !===== Distance between 1 and 2 =====
       dist = norm2(v21)
       ddist = dist - r0(i)
       ediv = ediv + Kr(i) * ddist**2
 
-      f_i(:) = 2.0e0_wp * Kr(i) * ddist / dist * v21(:)
+      f_i(:) = 2.0_wp * Kr(i) * ddist / dist * v21(:)
       for(:, 1) = - f_i(:)
       for(:, 2) = + f_i(:)
 
@@ -206,13 +208,13 @@ contains
       endif
       ediv = ediv + Kphi1(i) * d**2
 
-      f_i(:) = + 2.0e0_wp * Kphi1(i) * d * abs54 / dmm * m(:)
-      f_l(:) = - 2.0e0_wp * Kphi1(i) * d * abs54 / dnn * n(:)
+      f_i(:) = + 2.0_wp * Kphi1(i) * d * abs54 / dmm * m(:)
+      f_l(:) = - 2.0_wp * Kphi1(i) * d * abs54 / dnn * n(:)
 
       for(:, 3) = f_i(:)
-      for(:, 4) = (-1.0e0_wp + d3454over5454) * f_i(:) &
+      for(:, 4) = (-1.0_wp + d3454over5454) * f_i(:) &
                  -(            d5654over5454) * f_l(:)
-      for(:, 5) = (-1.0e0_wp + d5654over5454) * f_l(:) &
+      for(:, 5) = (-1.0_wp + d5654over5454) * f_l(:) &
                  -(            d3454over5454) * f_i(:)
       for(:, 6) = f_l(:)
 
@@ -242,14 +244,14 @@ contains
       endif
       ediv = ediv + Kphi2(i) * d**2
 
-      f_i(:) = + 2.0e0_wp * Kphi2(i) * d * abs56 / dmm * m(:)
-      f_l(:) = - 2.0e0_wp * Kphi2(i) * d * abs56 / dnn * n(:)
+      f_i(:) = + 2.0_wp * Kphi2(i) * d * abs56 / dmm * m(:)
+      f_l(:) = - 2.0_wp * Kphi2(i) * d * abs56 / dnn * n(:)
 
       for(:, 7) =           + f_i(:)
-      for(:, 6) = for(:, 6) + (-1.0e0_wp + d7656over5656) * f_i(:) &
+      for(:, 6) = for(:, 6) + (-1.0_wp + d7656over5656) * f_i(:) &
                             - (            d5456over5656) * f_l(:)
       for(:, 5) = for(:, 5) - (            d7656over5656) * f_i(:) &
-                            + (-1.0e0_wp + d5456over5656) * f_l(:)
+                            + (-1.0_wp + d5456over5656) * f_l(:)
       for(:, 4) = for(:, 4) + f_l(:)
 
       !===== Total =====
@@ -446,14 +448,14 @@ contains
       v76(1:3) = coord(1:3, i7) - coord(1:3, i6)
       v76(1:3) = v76(1:3) - bsize(1:3)*anint(v76(1:3)*inv_bsize(1:3))
 
-      ediv = 1.0e0_wp
+      ediv = 1.0_wp
 
       !===== Distance between 1 and 2 =====
       dist = norm2(v21)
       ddist = dist - r0(i)
       ediv = ediv + Kr(i) * ddist**2
 
-      f_i(:) = 2.0e0_wp * Kr(i) * ddist / dist * v21(:)
+      f_i(:) = 2.0_wp * Kr(i) * ddist / dist * v21(:)
       for(:, 1) = - f_i(:)
       for(:, 2) = + f_i(:)
 
@@ -482,14 +484,14 @@ contains
          d = d + 2*PI
       endif
       ediv = ediv + Kphi1(i) * d**2
-      
-      f_i(:) = + 2.0e0_wp * Kphi1(i) * d * abs54 / dmm * m(:)
-      f_l(:) = - 2.0e0_wp * Kphi1(i) * d * abs54 / dnn * n(:)
+
+      f_i(:) = + 2.0_wp * Kphi1(i) * d * abs54 / dmm * m(:)
+      f_l(:) = - 2.0_wp * Kphi1(i) * d * abs54 / dnn * n(:)
 
       for(:, 3) = f_i(:)
-      for(:, 4) = (-1.0e0_wp + d3454over5454) * f_i(:) &
+      for(:, 4) = (-1.0_wp + d3454over5454) * f_i(:) &
                  -(            d5654over5454) * f_l(:)
-      for(:, 5) = (-1.0e0_wp + d5654over5454) * f_l(:) &
+      for(:, 5) = (-1.0_wp + d5654over5454) * f_l(:) &
                  -(            d3454over5454) * f_i(:)
       for(:, 6) = f_l(:)
 
@@ -519,14 +521,14 @@ contains
       endif
       ediv = ediv + Kphi2(i) * d**2
 
-      f_i(:) = + 2.0e0_wp * Kphi2(i) * d * abs56 / dmm * m(:)
-      f_l(:) = - 2.0e0_wp * Kphi2(i) * d * abs56 / dnn * n(:)
+      f_i(:) = + 2.0_wp * Kphi2(i) * d * abs56 / dmm * m(:)
+      f_l(:) = - 2.0_wp * Kphi2(i) * d * abs56 / dnn * n(:)
 
       for(:, 7) =           + f_i(:)
-      for(:, 6) = for(:, 6) + (-1.0e0_wp + d7656over5656) * f_i(:) &
+      for(:, 6) = for(:, 6) + (-1.0_wp + d7656over5656) * f_i(:) &
                             - (            d5456over5656) * f_l(:)
       for(:, 5) = for(:, 5) - (            d7656over5656) * f_i(:) &
-                            + (-1.0e0_wp + d5456over5656) * f_l(:)
+                            + (-1.0_wp + d5456over5656) * f_l(:)
       for(:, 4) = for(:, 4) + f_l(:)
 
       !===== Total =====
@@ -741,7 +743,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
     real(wp)                  :: dr, adr2, adr4, adr8
     real(wp)                  :: grad(3), dv_dr, eps, D
     real(wp)                  :: ene_omp(nthread), ene_omp_tmp
-    integer                   :: i, j, k, l, n_atom, id
+    integer                   :: i, j, k, l, n_atom, id, my_id
     integer                   :: i1, i2, i3, k1
     integer                   :: num_mwca, ini_mwca, fin_mwca
     integer                   :: omp_get_thread_num
@@ -776,15 +778,20 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
     !$omp private(ini_mwca, fin_mwca, i, k, j, l, dij, grad, dist,  &
     !$omp         i1, i2, i3, k1,                                   &
     !$omp         D, eps, dr, adr2, adr4, adr8, dv_dr, id,          &
-    !$omp         ene_omp_tmp, coord_i, force_tmp)                  &
+    !$omp         ene_omp_tmp, coord_i, force_tmp,  my_id)                  &
     !$omp shared(n_atom, num_mwca_calc, mwca_list, bsize, atomtype,  &
-    !$omp        mwca_eps, mwca_D, coord, force, a, a2, ene_omp)
+    !$omp        mwca_eps, mwca_D, coord, force, a, a2, ene_omp, &
+    !$omp        my_city_rank, nthread) &
+    !$omp reduction(+:enemwca) reduction(+:virial)    
     !
 #ifdef OMP
-    id      = omp_get_thread_num() + 1
+    id      = omp_get_thread_num()
 #else
-    id      = 1
+    id      = 0
 #endif
+    my_id   = my_city_rank * nthread + id
+    id = id + 1
+    
     do i = 1, n_atom-1
 
       !proceed = .false.
@@ -835,10 +842,10 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
           adr4 = adr2 * adr2
           adr8 = adr4 * adr4
 
-          dv_dr = abs(12.0e0_wp * eps * (adr2*adr4*adr8 - adr8) * dr / a2 / dist)
+          dv_dr = abs(12.0_wp * eps * (adr2*adr4*adr8 - adr8) * dr / a2 / dist)
 
           if (dv_dr > 50.0_wp) then
-            ! dv_dr = 50.0_wp
+            dv_dr = 50.0_wp
           end if
 
           grad(1:3) = dv_dr * dij(1:3)
@@ -846,8 +853,8 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
           !force(1:3,j,id) = force(1:3,j,id) - for(1:3)
 
           !if (dist > d_inf) then
-          ene_omp_tmp = ene_omp_tmp + eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
-          !print *, 'i, j, dist, D, a, eps, ene', i, j, dist, D, a, eps, eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
+          ene_omp_tmp = ene_omp_tmp + eps * (adr8*adr4 - 2*adr4*adr2 + 1.0_wp)
+          !print *, 'i, j, dist, D, a, eps, ene', i, j, dist, D, a, eps, eps * (adr8*adr4 - 2*adr4*adr2 + 1.0_wp)
           !print *, 'dv_dr', dv_dr
           !print *, 'coord(i)', coord_i(1:3)
           !print *, 'coord(j)', coord(1:3, j)
@@ -905,5 +912,624 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
     return
 
   end subroutine compute_energy_tis_mwca_pbc
+
+  subroutine compute_energy_tis_hb(enefunc, coord, force, virial, enehb)
+
+    ! formal arguments
+    type(s_enefunc), target, intent(in)    :: enefunc
+    real(wp),                intent(in)    :: coord(:,:)
+    real(wp),                intent(inout) :: force(:,:,:)
+    real(wp),                intent(inout) :: virial(3,3)
+    real(wp),                intent(inout) :: enehb
+
+    ! local variables
+    integer                  :: i, id 
+    integer                  :: i_atom, j_atom, i1_atom, j1_atom, i2_atom, j2_atom
+    integer                  :: istart, iend
+    real(wp)                 :: v12(1:3), v13(1:3), v53(1:3), v42(1:3), v46(1:3)
+    real(wp)                 :: d, dih 
+    real(wp)                 :: a42, a13, a12
+    real(wp)                 :: cos_theta124, cos_theta312, cos_theta531, cos_theta246
+    real(wp)                 :: d1212, d1313, d4242
+    real(wp)                 :: d1213, d1242, d4246, d1353
+    real(wp)                 :: d1213over1212, d1213over1313
+    real(wp)                 :: d1242over1212, d1242over4242
+    real(wp)                 :: d4246over4242, d1353over1313
+    real(wp)                 :: n(3)
+    real(wp)                 :: c4212(3), c1213(3), c5313(3), c4246(3)
+    real(wp)                 :: c4212_abs2, c1213_abs2, c5313_abs2, c4246_abs2
+    real(wp)                 :: pre, f_i(3), f_k(3), f_l(3), ex, ene, for_hb(1:3, 1:6)
+
+    integer,         pointer :: list(:,:)
+    real(wp),        pointer :: U0(:)
+    real(wp),        pointer :: dist_eq(:), dist_coef(:)
+    real(wp),        pointer :: ang1_eq(:), ang2_eq(:), ang_coef(:)
+    real(wp),        pointer :: dih_eq(:), dih1_eq(:), dih2_eq(:), dih_coef(:)
+
+    integer                  :: omp_get_thread_num
+
+    call timer(TimerTISHB, TimerOn)
+
+    istart       = enefunc%istart_tis_hb
+    iend         = enefunc%iend_tis_hb
+
+    ! use pointers
+    !
+    list         => enefunc%tis_hb_list
+    U0           => enefunc%tis_hb_dist_U0
+    dist_eq      => enefunc%tis_hb_dist_eq
+    dist_coef    => enefunc%tis_hb_dist_coef
+    ang1_eq      => enefunc%tis_hb_angle_ang1
+    ang2_eq      => enefunc%tis_hb_angle_ang2
+    ang_coef     => enefunc%tis_hb_angle_coef
+    dih_eq       => enefunc%tis_hb_dihedral_dih
+    dih1_eq      => enefunc%tis_hb_dihedral_dih1
+    dih2_eq      => enefunc%tis_hb_dihedral_dih2
+    dih_coef     => enefunc%tis_hb_dihedral_coef
+
+
+    ! calculation of local stacking energy and gradient
+    !
+    !$omp parallel default(none)                       &
+    !$omp private(id, i_atom, j_atom, i1_atom,         &
+    !$omp         j1_atom, i2_atom, j2_atom,           &
+    !$omp         d,dih,cos_theta124,cos_theta312,     &
+    !$omp         cos_theta531,cos_theta246,           &
+    !$omp         v12,v13,v53,v42,v46,a12,a13,a42,     &
+    !$omp         d1212,d1313, for_hb, ex, ene,        &
+    !$omp         pre, f_i, f_k, f_l, n,               &
+    !$omp         d4242,d1213,d1242,d4246,d1353,       &
+    !$omp         d1213over1212,d1213over1313,         &
+    !$omp         d1242over1212,d1242over4242,         &
+    !$omp         d4246over4242,d1353over1313,c4212,   &
+    !$omp         c1213,c4212_abs2,c1213_abs2,         &
+    !$omp         c5313, c5313_abs2, c4246, c4246_abs2)&
+    !$omp shared(istart, iend, U0, dist_eq, dist_coef, &
+    !$omp        coord, list, ang1_eq, ang2_eq,        &
+    !$omp        ang_coef, dih_eq, dih1_eq, dih2_eq,   &
+    !$omp        dih_coef, force, nthread)             &
+    !$omp reduction(+:enehb) reduction(+:virial)
+#ifdef OMP
+    id = omp_get_thread_num()
+#else
+    id = 0
+#endif
+    do i = istart+id, iend, nthread
+      for_hb(:,:) = 0.0_wp
+
+      i_atom  = list(1, i) ! 1
+      j_atom  = list(2, i) ! 2
+      i1_atom = list(3, i) ! 3
+      j1_atom = list(4, i) ! 4
+      i2_atom = list(5, i) ! 5
+      j2_atom = list(6, i) ! 6
+
+      !===== Distance =====!
+      v12(1:3) = coord(1:3, i_atom)  - coord(1:3, j_atom)
+      d1212 = dot_product(v12,v12)
+      a12 = norm2(v12)
+
+      d = a12 - dist_eq(i)
+
+      ! Cutoff
+      if (abs(d) > 2.0_wp) then
+        cycle
+      end if
+
+      ex = - dist_coef(i) * d**2
+      f_i(:) = (2.0_wp * dist_coef(i) * d / a12) * v12(:)
+      for_hb(:,1) = + f_i(:)
+      for_hb(:,2) = - f_i(:)
+
+      v13(1:3) = coord(1:3, i_atom)  - coord(1:3, i1_atom)
+      v53(1:3) = coord(1:3, i2_atom) - coord(1:3, i1_atom)
+      v42(1:3) = coord(1:3, j1_atom) - coord(1:3, j_atom)
+      v46(1:3) = coord(1:3, j1_atom) - coord(1:3, j2_atom)
+
+      d1313 = dot_product(v13,v13)
+      d4242 = dot_product(v42,v42)
+      a13 = sqrt(d1313)
+      a42 = sqrt(d4242)
+      d1213 = dot_product(v13,v12)
+      d1242 = dot_product(v12,v42)
+      d4246 = dot_product(v42,v46)
+      d1353 = dot_product(v13,v53)
+      d1213over1212 = d1213 / d1212
+      d1213over1313 = d1213 / d1313
+      d1242over1212 = d1242 / d1212
+      d4246over4242 = d4246 / d4242
+      d1242over4242 = d1242 / d4242
+      d1353over1313 = d1353 / d1313
+
+      !===== Angle of 3-1=2  =====!
+      ! ENERGY
+      cos_theta312 = d1213 / (a13 * a12)
+      d = acos(cos_theta312) - ang1_eq(i)
+      ex = ex - ang_coef(i) * d**2
+
+      ! FORCE
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta312) > 0.99995_wp) then
+          d1213 = sign(a12 * a13 * 0.99995_wp, cos_theta312)
+      end if
+
+      pre = 2.0_wp * ang_coef(i) * d / sqrt(d1313*d1212 - d1213**2)
+      f_i(:) = pre * (v12(:) - (d1213over1313 * v13(:)))
+      f_k(:) = pre * (v13(:) - (d1213over1212 * v12(:)))
+      for_hb(:,3) = for_hb(:,3) + f_i(:)
+      for_hb(:,2) = for_hb(:,2) + f_k(:)
+      for_hb(:,1) = for_hb(:,1) - f_i(:) - f_k(:)
+
+      !===== Angle of 1=2-4  =====!
+      ! ENERGY
+      cos_theta124 = d1242 / (a12 * a42)
+      d = acos(cos_theta124) - ang2_eq(i)
+      ex = ex - ang_coef(i) * d**2
+
+      ! FORCE
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta124) > 0.99995) then
+          d1242 = sign(a12 * a42 * 0.99995, cos_theta124)
+      endif
+
+      pre = 2.0_wp * ang_coef(i) * d / sqrt(d1212*d4242 - d1242**2)
+      f_i(:) = - pre * (v42(:) - (d1242over1212 * v12(:)))
+      f_k(:) = - pre * (v12(:) - (d1242over4242 * v42(:)))
+      for_hb(:,1) = for_hb(:,1) + f_i(:)
+      for_hb(:,4) = for_hb(:,4) + f_k(:)
+      for_hb(:,2) = for_hb(:,2) - f_i(:) - f_k(:)
+
+      !===== Dihedral angle among 4-2=1=3 =====!
+      c4212(1) = v42(2)*v12(3) - v42(3)*v12(2)
+      c4212(2) = v42(3)*v12(1) - v42(1)*v12(3)
+      c4212(3) = v42(1)*v12(2) - v42(2)*v12(1)
+      c1213(1) = v12(2)*v13(3) - v12(3)*v13(2)
+      c1213(2) = v12(3)*v13(1) - v12(1)*v13(3)
+      c1213(3) = v12(1)*v13(2) - v12(2)*v13(1)
+      c4212_abs2 = dot_product(c4212,c4212)
+      c1213_abs2 = dot_product(c1213,c1213)
+
+      ! ENERGY
+      dih = atan2(dot_product(v42,c1213)*a12, dot_product(c4212,c1213))
+      d = dih - dih_eq(i)
+      if (d > PI) then
+         d = d - 2*PI
+      else if (d < -PI) then
+         d = d + 2*PI
+      endif
+      ex = ex - dih_coef(i) * d**2
+
+      ! FORCE
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta124) > 0.99995) then
+          ! |c4212|^2 = |v42|^2 * |v12|^2 * sin(theta)^2
+          c4212_abs2 = d4242 * d1212 * (1.0 - 0.99995**2)
+      endif
+      if (abs(cos_theta312) > 0.99995) then
+          c1213_abs2 = d1212 * d1313 * (1.0 - 0.99995**2)
+      endif
+
+      pre = 2.0_wp * dih_coef(i) * d * a12
+      f_i(:) = + pre / c4212_abs2 * c4212(:)
+      f_l(:) = - pre / c1213_abs2 * c1213(:)
+    
+      for_hb(:,4) = for_hb(:,4) + f_i(:)
+      for_hb(:,2) = for_hb(:,2) + (-1.0_wp + d1242over1212) * f_i(:) &
+                                        - (  d1213over1212) * f_l(:)
+      for_hb(:,1) = for_hb(:,1) + (-1.0_wp + d1213over1212) * f_l(:) &
+                                        - (  d1242over1212) * f_i(:)
+      for_hb(:,3) = for_hb(:,3) + f_l(:)
+
+      !===== Dihedral angle among 5-3-1=2 =====!
+      c5313(1) = v53(2) * v13(3) - v53(3) * v13(2)
+      c5313(2) = v53(3) * v13(1) - v53(1) * v13(3)
+      c5313(3) = v53(1) * v13(2) - v53(2) * v13(1)
+      n(:) = -c1213(:)
+
+      ! ENERGY
+      dih = atan2(dot_product(v53,n)*a13 , dot_product(c5313,n))
+      d = dih - dih1_eq(i)
+      if (d > PI) then
+         d = d - 2*PI
+      else if (d < -PI) then
+         d = d + 2*PI
+      endif
+      ex = ex - dih_coef(i) * d**2
+
+      ! FORCE
+      c5313_abs2 = dot_product(c5313, c5313)
+
+      cos_theta531 = d1353 / (a13 * norm2(v53))
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta531) > 0.99995) then
+          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0 - 0.99995**2)
+      endif
+
+      pre = 2.0_wp * dih_coef(i) * d * a13
+      f_i(:) = + pre / c5313_abs2 * c5313(:)
+      f_l(:) = - pre / c1213_abs2 * n(:)
+    
+      for_hb(:,5) = for_hb(:,5) + f_i(:)
+      for_hb(:,3) = for_hb(:,3) + (-1.0_wp + d1353over1313) * f_i(:) &
+                                        - (  d1213over1313) * f_l(:)
+      for_hb(:,1) = for_hb(:,1) + (-1.0_wp + d1213over1313) * f_l(:) &
+                                        - (  d1353over1313) * f_i(:)
+      for_hb(:,2) = for_hb(:,2) + f_l(:)
+
+      !===== Dihedral angle among 1=2-4-6 =====!
+      n(:) = -c4212(:)
+      c4246(1) = v42(2) * v46(3) - v42(3) * v46(2)
+      c4246(2) = v42(3) * v46(1) - v42(1) * v46(3)
+      c4246(3) = v42(1) * v46(2) - v42(2) * v46(1)
+      c4246_abs2 = dot_product(c4246, c4246)
+
+      ! ENERGY
+      dih = atan2(dot_product(v12,c4246)*a42 , dot_product(n,c4246))
+      d = dih - dih2_eq(i)
+      if (d > PI) then
+         d = d - 2*PI
+      else if (d < -PI) then
+         d = d + 2*PI
+      endif
+      ex = ex - dih_coef(i) * d**2
+
+      ! FORCE
+      cos_theta246 = d4246 / (a42 * norm2(v46))
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta246) > 0.99995) then
+          c4246_abs2 = dot_product(v46,v46) * d4242 * (1.0 - 0.99995**2)
+      endif
+
+      pre = 2.0_wp * dih_coef(i) * d * a42
+      f_i(:) = + pre / c4212_abs2 * n(:)
+      f_l(:) = - pre / c4246_abs2 * c4246(:)
+    
+      for_hb(:,1) = for_hb(:,1) + f_i(:)
+      for_hb(:,2) = for_hb(:,2) + (-1.0_wp + d1242over4242) * f_i(:) &
+                                        - (      d4246over4242) * f_l(:)
+      for_hb(:,4) = for_hb(:,4) + (-1.0_wp + d4246over4242) * f_l(:) &
+                                        - (      d1242over4242) * f_i(:)
+      for_hb(:,6) = for_hb(:,6) + f_l(:)
+
+      !===== Total =====!
+
+      ex = U0(i) * exp(ex)
+      enehb = enehb + ex
+      ! check this
+      for_hb(:,:) = enehb * for_hb(:,:)
+
+      force(1:3, i_atom,  id+1) = force(1:3, i_atom,  id+1) + for_hb(1:3, 1)
+      force(1:3, j_atom,  id+1) = force(1:3, j_atom,  id+1) + for_hb(1:3, 2)
+      force(1:3, i1_atom, id+1) = force(1:3, i1_atom, id+1) + for_hb(1:3, 3)
+      force(1:3, j1_atom, id+1) = force(1:3, j1_atom, id+1) + for_hb(1:3, 4)
+      force(1:3, i2_atom, id+1) = force(1:3, i2_atom, id+1) + for_hb(1:3, 5)
+      force(1:3, j2_atom, id+1) = force(1:3, j2_atom, id+1) + for_hb(1:3, 6)
+
+    end do
+    !$omp end parallel
+
+    call timer(TimerTISHB, TimerOff)
+
+    return
+
+  end subroutine compute_energy_tis_hb
+
+
+  subroutine compute_energy_tis_hb_pbc(enefunc, boundary, coord, &
+                                           force, virial, enehb)
+
+    ! formal arguments
+    type(s_enefunc), target, intent(in)    :: enefunc
+    type(s_boundary),target, intent(in)    :: boundary
+    real(wp),                intent(in)    :: coord(:,:)
+    real(wp),                intent(inout) :: force(:,:,:)
+    real(wp),                intent(inout) :: virial(3,3)
+    real(wp),                intent(inout) :: enehb
+
+    ! local variables
+    integer                  :: i, id 
+    integer                  :: i_atom, j_atom, i1_atom, j1_atom, i2_atom, j2_atom
+    integer                  :: istart, iend
+    real(wp)                 :: v12(1:3), v13(1:3), v53(1:3), v42(1:3), v46(1:3)
+    real(wp)                 :: d, dih 
+    real(wp)                 :: a42, a13, a12
+    real(wp)                 :: cos_theta124, cos_theta312, cos_theta531, cos_theta246
+    real(wp)                 :: d1212, d1313, d4242
+    real(wp)                 :: d1213, d1242, d4246, d1353
+    real(wp)                 :: d1213over1212, d1213over1313
+    real(wp)                 :: d1242over1212, d1242over4242
+    real(wp)                 :: d4246over4242, d1353over1313
+    real(wp)                 :: n(3)
+    real(wp)                 :: c4212(3), c1213(3), c5313(3), c4246(3)
+    real(wp)                 :: c4212_abs2, c1213_abs2, c5313_abs2, c4246_abs2
+    real(wp)                 :: pre, f_i(3), f_k(3), f_l(3), ex, ene, for_hb(1:3, 1:6)
+    real(wp)                 :: bsize(3), inv_bsize(3)
+
+    integer,         pointer :: list(:,:)
+    real(wp),        pointer :: U0(:)
+    real(wp),        pointer :: dist_eq(:), dist_coef(:)
+    real(wp),        pointer :: ang1_eq(:), ang2_eq(:), ang_coef(:)
+    real(wp),        pointer :: dih_eq(:), dih1_eq(:), dih2_eq(:), dih_coef(:)
+
+    integer                  :: omp_get_thread_num
+
+    call timer(TimerTISHB, TimerOn)
+
+    istart       = enefunc%istart_tis_hb
+    iend         = enefunc%iend_tis_hb
+
+    ! use pointers
+    !
+    list         => enefunc%tis_hb_list
+    U0           => enefunc%tis_hb_dist_U0
+    dist_eq      => enefunc%tis_hb_dist_eq
+    dist_coef    => enefunc%tis_hb_dist_coef
+    ang1_eq      => enefunc%tis_hb_angle_ang1
+    ang2_eq      => enefunc%tis_hb_angle_ang2
+    ang_coef     => enefunc%tis_hb_angle_coef
+    dih_eq       => enefunc%tis_hb_dihedral_dih
+    dih1_eq      => enefunc%tis_hb_dihedral_dih1
+    dih2_eq      => enefunc%tis_hb_dihedral_dih2
+    dih_coef     => enefunc%tis_hb_dihedral_coef
+
+    bsize(1) = boundary%box_size_x
+    bsize(2) = boundary%box_size_y
+    bsize(3) = boundary%box_size_z
+    inv_bsize = 1.0_wp/bsize(1:3)
+
+    ! calculation of local stacking energy and gradient
+    !
+    !$omp parallel default(none)                       &
+    !$omp private(id, i_atom, j_atom, i1_atom,         &
+    !$omp         j1_atom, i2_atom, j2_atom,           &
+    !$omp         d,dih,cos_theta124,cos_theta312,     &
+    !$omp         cos_theta531,cos_theta246,           &
+    !$omp         v12,v13,v53,v42,v46,a12,a13,a42,     &
+    !$omp         d1212,d1313, for_hb, ex, ene,        &
+    !$omp         pre, f_i, f_k, f_l, n,               &
+    !$omp         d4242,d1213,d1242,d4246,d1353,       &
+    !$omp         d1213over1212,d1213over1313,         &
+    !$omp         d1242over1212,d1242over4242,         &
+    !$omp         d4246over4242,d1353over1313,c4212,   &
+    !$omp         c1213,c4212_abs2,c1213_abs2,         &
+    !$omp         c5313, c5313_abs2, c4246, c4246_abs2)&
+    !$omp shared(istart, iend, U0, dist_eq, dist_coef, &
+    !$omp        coord, list, ang1_eq, ang2_eq,        &
+    !$omp        ang_coef, dih_eq, dih1_eq, dih2_eq,   &
+    !$omp        dih_coef, force, nthread,             &
+    !$omp        bsize, inv_bsize)                     &
+    !$omp reduction(+:enehb) reduction(+:virial)
+#ifdef OMP
+    id = omp_get_thread_num()
+#else
+    id = 0
+#endif
+    do i = istart+id, iend, nthread
+      for_hb(:,:) = 0.0_wp
+
+      i_atom  = list(1, i) ! 1
+      j_atom  = list(2, i) ! 2
+      i1_atom = list(3, i) ! 3
+      j1_atom = list(4, i) ! 4
+      i2_atom = list(5, i) ! 5
+      j2_atom = list(6, i) ! 6
+
+      !===== Distance =====!
+      v12(1:3) = coord(1:3, i_atom)  - coord(1:3, j_atom)
+      v12(1:3) = v12(1:3) - bsize(1:3)*anint(v12(1:3)*inv_bsize(1:3))
+      d1212 = dot_product(v12,v12)
+      a12 = norm2(v12) 
+
+      d = a12 - dist_eq(i)
+
+      ! Cutoff
+      if (abs(d) > 2.0_wp) then
+        cycle
+      end if
+
+      ex = - dist_coef(i) * d**2
+      f_i(:) = (2.0_wp * dist_coef(i) * d / a12) * v12(:)
+      for_hb(:,1) = + f_i(:)
+      for_hb(:,2) = - f_i(:)
+
+      v13(1:3) = coord(1:3, i_atom)  - coord(1:3, i1_atom)
+      v13(1:3) = v13(1:3) - bsize(1:3)*anint(v13(1:3)*inv_bsize(1:3))
+
+      v53(1:3) = coord(1:3, i2_atom) - coord(1:3, i1_atom)
+      v53(1:3) = v53(1:3) - bsize(1:3)*anint(v53(1:3)*inv_bsize(1:3))
+
+      v42(1:3) = coord(1:3, j1_atom) - coord(1:3, j_atom)
+      v42(1:3) = v42(1:3) - bsize(1:3)*anint(v42(1:3)*inv_bsize(1:3))
+
+      v46(1:3) = coord(1:3, j1_atom) - coord(1:3, j2_atom)
+      v46(1:3) = v46(1:3) - bsize(1:3)*anint(v46(1:3)*inv_bsize(1:3))
+
+      d1313 = dot_product(v13,v13)
+      d4242 = dot_product(v42,v42)
+      a13 = sqrt(d1313)
+      a42 = sqrt(d4242)
+      d1213 = dot_product(v13,v12)
+      d1242 = dot_product(v12,v42)
+      d4246 = dot_product(v42,v46)
+      d1353 = dot_product(v13,v53)
+      d1213over1212 = d1213 / d1212
+      d1213over1313 = d1213 / d1313
+      d1242over1212 = d1242 / d1212
+      d4246over4242 = d4246 / d4242
+      d1242over4242 = d1242 / d4242
+      d1353over1313 = d1353 / d1313
+
+      !===== Angle of 3-1=2  =====!
+      ! ENERGY
+      cos_theta312 = d1213 / (a13 * a12)
+      d = acos(cos_theta312) - ang1_eq(i)
+      ex = ex - ang_coef(i) * d**2
+
+      ! FORCE
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta312) > 0.99995_wp) then
+          d1213 = sign(a12 * a13 * 0.99995_wp, cos_theta312)
+      end if
+
+      pre = 2.0_wp * ang_coef(i) * d / sqrt(d1313*d1212 - d1213**2)
+      f_i(:) = pre * (v12(:) - (d1213over1313 * v13(:)))
+      f_k(:) = pre * (v13(:) - (d1213over1212 * v12(:)))
+      for_hb(:,3) = for_hb(:,3) + f_i(:)
+      for_hb(:,2) = for_hb(:,2) + f_k(:)
+      for_hb(:,1) = for_hb(:,1) - f_i(:) - f_k(:)
+
+      !===== Angle of 1=2-4  =====!
+      ! ENERGY
+      cos_theta124 = d1242 / (a12 * a42)
+      d = acos(cos_theta124) - ang2_eq(i)
+      ex = ex - ang_coef(i) * d**2
+
+      ! FORCE
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta124) > 0.99995) then
+          d1242 = sign(a12 * a42 * 0.99995, cos_theta124)
+      endif
+
+      pre = 2.0_wp * ang_coef(i) * d / sqrt(d1212*d4242 - d1242**2)
+      f_i(:) = - pre * (v42(:) - (d1242over1212 * v12(:)))
+      f_k(:) = - pre * (v12(:) - (d1242over4242 * v42(:)))
+      for_hb(:,1) = for_hb(:,1) + f_i(:)
+      for_hb(:,4) = for_hb(:,4) + f_k(:)
+      for_hb(:,2) = for_hb(:,2) - f_i(:) - f_k(:)
+
+      !===== Dihedral angle among 4-2=1=3 =====!
+      c4212(1) = v42(2)*v12(3) - v42(3)*v12(2)
+      c4212(2) = v42(3)*v12(1) - v42(1)*v12(3)
+      c4212(3) = v42(1)*v12(2) - v42(2)*v12(1)
+      c1213(1) = v12(2)*v13(3) - v12(3)*v13(2)
+      c1213(2) = v12(3)*v13(1) - v12(1)*v13(3)
+      c1213(3) = v12(1)*v13(2) - v12(2)*v13(1)
+      c4212_abs2 = dot_product(c4212,c4212)
+      c1213_abs2 = dot_product(c1213,c1213)
+
+      ! ENERGY
+      dih = atan2(dot_product(v42,c1213)*a12, dot_product(c4212,c1213))
+      d = dih - dih_eq(i)
+      if (d > PI) then
+         d = d - 2*PI
+      else if (d < -PI) then
+         d = d + 2*PI
+      endif
+      ex = ex - dih_coef(i) * d**2
+
+      ! FORCE
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta124) > 0.99995) then
+          ! |c4212|^2 = |v42|^2 * |v12|^2 * sin(theta)^2
+          c4212_abs2 = d4242 * d1212 * (1.0 - 0.99995**2)
+      endif
+      if (abs(cos_theta312) > 0.99995) then
+          c1213_abs2 = d1212 * d1313 * (1.0 - 0.99995**2)
+      endif
+
+      pre = 2.0_wp * dih_coef(i) * d * a12
+      f_i(:) = + pre / c4212_abs2 * c4212(:)
+      f_l(:) = - pre / c1213_abs2 * c1213(:)
+    
+      for_hb(:,4) = for_hb(:,4) + f_i(:)
+      for_hb(:,2) = for_hb(:,2) + (-1.0_wp + d1242over1212) * f_i(:) &
+                                        - (  d1213over1212) * f_l(:)
+      for_hb(:,1) = for_hb(:,1) + (-1.0_wp + d1213over1212) * f_l(:) &
+                                        - (  d1242over1212) * f_i(:)
+      for_hb(:,3) = for_hb(:,3) + f_l(:)
+
+      !===== Dihedral angle among 5-3-1=2 =====!
+      c5313(1) = v53(2) * v13(3) - v53(3) * v13(2)
+      c5313(2) = v53(3) * v13(1) - v53(1) * v13(3)
+      c5313(3) = v53(1) * v13(2) - v53(2) * v13(1)
+      n(:) = -c1213(:)
+
+      ! ENERGY
+      dih = atan2(dot_product(v53,n)*a13 , dot_product(c5313,n))
+      d = dih - dih1_eq(i)
+      if (d > PI) then
+         d = d - 2*PI
+      else if (d < -PI) then
+         d = d + 2*PI
+      endif
+      ex = ex - dih_coef(i) * d**2
+
+      ! FORCE
+      c5313_abs2 = dot_product(c5313, c5313)
+
+      cos_theta531 = d1353 / (a13 * norm2(v53))
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta531) > 0.99995) then
+          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0 - 0.99995**2)
+      endif
+
+      pre = 2.0_wp * dih_coef(i) * d * a13
+      f_i(:) = + pre / c5313_abs2 * c5313(:)
+      f_l(:) = - pre / c1213_abs2 * n(:)
+    
+      for_hb(:,5) = for_hb(:,5) + f_i(:)
+      for_hb(:,3) = for_hb(:,3) + (-1.0_wp + d1353over1313) * f_i(:) &
+                                        - (  d1213over1313) * f_l(:)
+      for_hb(:,1) = for_hb(:,1) + (-1.0_wp + d1213over1313) * f_l(:) &
+                                        - (  d1353over1313) * f_i(:)
+      for_hb(:,2) = for_hb(:,2) + f_l(:)
+
+      !===== Dihedral angle among 1=2-4-6 =====!
+      n(:) = -c4212(:)
+      c4246(1) = v42(2) * v46(3) - v42(3) * v46(2)
+      c4246(2) = v42(3) * v46(1) - v42(1) * v46(3)
+      c4246(3) = v42(1) * v46(2) - v42(2) * v46(1)
+      c4246_abs2 = dot_product(c4246, c4246)
+
+      ! ENERGY
+      dih = atan2(dot_product(v12,c4246)*a42 , dot_product(n,c4246))
+      d = dih - dih2_eq(i)
+      if (d > PI) then
+         d = d - 2*PI
+      else if (d < -PI) then
+         d = d + 2*PI
+      endif
+      ex = ex - dih_coef(i) * d**2
+
+      ! FORCE
+      cos_theta246 = d4246 / (a42 * norm2(v46))
+      ! use maximum values at the limit angle 0.99995
+      if (abs(cos_theta246) > 0.99995) then
+          c4246_abs2 = dot_product(v46,v46) * d4242 * (1.0 - 0.99995**2)
+      endif
+
+      pre = 2.0_wp * dih_coef(i) * d * a42
+      f_i(:) = + pre / c4212_abs2 * n(:)
+      f_l(:) = - pre / c4246_abs2 * c4246(:)
+    
+      for_hb(:,1) = for_hb(:,1) + f_i(:)
+      for_hb(:,2) = for_hb(:,2) + (-1.0_wp + d1242over4242) * f_i(:) &
+                                        - (      d4246over4242) * f_l(:)
+      for_hb(:,4) = for_hb(:,4) + (-1.0_wp + d4246over4242) * f_l(:) &
+                                        - (      d1242over4242) * f_i(:)
+      for_hb(:,6) = for_hb(:,6) + f_l(:)
+
+      !===== Total =====!
+
+      ex = U0(i) * exp(ex)
+      enehb = enehb + ex
+      ! check this
+      for_hb(:,:) = enehb * for_hb(:,:)
+
+      force(1:3, i_atom,  id+1) = force(1:3, i_atom,  id+1) + for_hb(1:3, 1)
+      force(1:3, j_atom,  id+1) = force(1:3, j_atom,  id+1) + for_hb(1:3, 2)
+      force(1:3, i1_atom, id+1) = force(1:3, i1_atom, id+1) + for_hb(1:3, 3)
+      force(1:3, j1_atom, id+1) = force(1:3, j1_atom, id+1) + for_hb(1:3, 4)
+      force(1:3, i2_atom, id+1) = force(1:3, i2_atom, id+1) + for_hb(1:3, 5)
+      force(1:3, j2_atom, id+1) = force(1:3, j2_atom, id+1) + for_hb(1:3, 6)
+
+    end do
+    !$omp end parallel
+
+    call timer(TimerTISHB, TimerOff)
+
+    return
+  
+  end subroutine compute_energy_tis_hb_pbc
 
 end module at_energy_tis_mod

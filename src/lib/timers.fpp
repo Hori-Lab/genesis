@@ -87,9 +87,10 @@ module timers_mod
 
   integer, public, parameter :: TimerTISLocalStack = 49
   integer, public, parameter :: TimerTISmWCA = 50
+  integer, public, parameter :: TimerTISHB = 51
 
   integer,         parameter :: InvalidID       = -1
-  integer,         parameter :: NumTimers       = 50  !< total number of timers
+  integer,         parameter :: NumTimers       = 51  !< total number of timers
   integer,         parameter :: MaxProc         = 100 !< maximum number of processes
 
   ! variables
@@ -234,6 +235,7 @@ contains
       avetime(TimerCGIDRKH)    = sumtime(TimerCGIDRKH)    / num_realnodes
       avetime(TimerCGKH)       = sumtime(TimerCGKH)       / num_realnodes
       avetime(TimerTISLocalStack) = sumtime(TimerTISLocalStack) / num_realnodes
+      avetime(TimerTISHB)      = sumtime(TimerTISHB)      / num_realnodes
       avetime(TimerTISmWCA)    = sumtime(TimerTISmWCA)    / num_realnodes
       avetime(TimerRestraint)  = sumtime(TimerRestraint)  / num_realnodes
       avetime(TimerNonBond)    = sumtime(TimerNonBond)    / nproc_world
@@ -349,6 +351,10 @@ contains
                                 '      TIS lstack  =',avetime(TimerTISLocalStack), &
                                 ' (',mintime(TimerTISLocalStack),',',              &
                                  maxtime(TimerTISLocalStack),')'
+      write(MsgOut,'(a,f12.3,a,f12.3,a,f12.3,a)')                              &
+                                '      TIS HB  =',avetime(TimerTISHB), &
+                                ' (',mintime(TimerTISHB),',',              &
+                                 maxtime(TimerTISHB),')'
       write(MsgOut,'(a,f12.3,a,f12.3,a,f12.3,a)')                              &
                                 '      TIS mWCA    =',avetime(TimerTISmWCA),   &
                                 ' (',mintime(TimerTISmWCA),',',                &

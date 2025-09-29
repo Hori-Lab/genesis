@@ -61,6 +61,7 @@ module at_energy_str_mod
 
     ! TIS
     real(wp)              :: tis_lstack
+    real(wp)              :: tis_hb
 
     ! restraint
     real(wp), allocatable :: restraint(:)
@@ -160,6 +161,7 @@ contains
     energy%PWMcosns           = 0.0_wp
     energy%cg_exv             = 0.0_wp
     energy%tis_lstack         = 0.0_wp
+    energy%tis_hb             = 0.0_wp
 
     if (allocated(energy%restraint) .and. size(energy%restraint) > 0) then
       energy%restraint(1:size(energy%restraint)) = 0.0_wp

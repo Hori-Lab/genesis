@@ -1974,6 +1974,11 @@ contains
           ! write (*,*) 'TIS Local Stack energy is calculated for pbc'
         end if
 
+        if (enefunc%tis_hb_calc) then
+          call compute_energy_tis_hb_pbc(enefunc, boundary, &
+          coord_pbc, force_omp, virial, energy%tis_hb)
+        end if
+
       end if
 
     case (BoundaryTypeNOBC)
@@ -1990,6 +1995,11 @@ contains
           call compute_energy_tis_lstack(enefunc, &
           coord, force_omp, virial, energy%tis_lstack)
           ! write (*,*) 'TIS Local Stack energy is calculated for nobc'
+        end if
+
+        if (enefunc%tis_hb_calc) then
+          call compute_energy_tis_hb(enefunc, &
+          coord, force_omp, virial, energy%tis_hb)
         end if
 
       end if
@@ -2207,7 +2217,8 @@ contains
                  + energy%cg_DNA_exv                                   &
                  + energy%cg_IDR_HPS + energy%cg_IDR_KH                &
                  + energy%cg_KH_inter_pro + energy%cg_exv              &
-                 + energy%PWMcos + energy%PWMcosns + energy%tis_lstack
+                 + energy%PWMcos + energy%PWMcosns + energy%tis_lstack &
+                 + energy%tis_hb
     energy%drms(1:2) = drms(1:2)
 
     ! GaMD boost and statistics
@@ -3770,6 +3781,12 @@ contains
       ifm = ifm+1
     end if
 
+    if (enefunc%num_tis_hb > 0) then
+      write(category(ifm),frmt) 'TIS_HB'
+      values(ifm) = energy%tis_hb
+      ifm = ifm+1
+    end if
+
     if (enefunc%forcefield == ForcefieldAAGO .or. &
         enefunc%forcefield == ForcefieldCAGO .or. &
         enefunc%forcefield == ForcefieldKBGO .or. &
@@ -4676,8 +4693,9 @@ contains
     before_allreduce(40) = energy%cg_KH_inter_pro
     before_allreduce(41) = energy%cg_exv
     before_allreduce(42) = energy%tis_lstack
+    before_allreduce(43) = energy%tis_hb
 
-    call mpi_allreduce(before_allreduce, after_allreduce, 42, &
+    call mpi_allreduce(before_allreduce, after_allreduce, 43, &
                        mpi_wp_real,  mpi_sum,                 &
                        mpi_comm_country, ierror)
 
@@ -4720,6 +4738,7 @@ contains
     energy%cg_KH_inter_pro    = after_allreduce(40)
     energy%cg_exv             = after_allreduce(41)
     energy%tis_lstack         = after_allreduce(42)
+    energy%tis_hb             = after_allreduce(43)
 
     return
 
