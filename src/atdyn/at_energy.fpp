@@ -142,6 +142,7 @@ module at_energy_mod
     real(wp)              :: tis_pairlistdist_mwca  = 11.0_wp
     real(wp)              :: cg_IDR_Aromatic_epsilon = 0.2_wp
     real(wp)              :: cg_IDR_CationPI_epsilon = 0.2_wp
+    logical               :: harmonic_tis_hbond      = .false.
   end type s_ene_info
 
   ! varibles
@@ -481,6 +482,8 @@ contains
         ene_info%cg_IDR_Aromatic_epsilon)
     call read_ctrlfile_real   (handle, Section, 'cg_IDR_CationPI_epsilon',&
         ene_info%cg_IDR_CationPI_epsilon)
+    call read_ctrlfile_logical(handle, Section, 'harmonic_tis_hbond',     &
+        ene_info%harmonic_tis_hbond)
 
 !!!develop
     !TODO CK
@@ -1975,8 +1978,13 @@ contains
         end if
 
         if (enefunc%tis_hb_calc) then
-          call compute_energy_tis_hb_pbc(enefunc, boundary, &
-          coord_pbc, force_omp, virial, energy%tis_hb)
+          if (enefunc%harmonic_tis_hbond) then
+            call compute_energy_tis_harmonic_hb_pbc(enefunc, boundary, &
+            coord_pbc, force_omp, virial, energy%tis_hb)
+          else
+            call compute_energy_tis_hb_pbc(enefunc, boundary, &
+            coord_pbc, force_omp, virial, energy%tis_hb)
+          end if
         end if
 
       end if

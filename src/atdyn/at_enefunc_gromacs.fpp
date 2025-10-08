@@ -3851,6 +3851,8 @@ contains
       enefunc%tis_hb_calc = .true.
     endif
 
+    enefunc%harmonic_tis_hbond = ene_info%harmonic_tis_hbond
+
     return
 
   end subroutine setup_enefunc_tis_hb

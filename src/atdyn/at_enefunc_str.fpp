@@ -537,6 +537,7 @@ module at_enefunc_str_mod
     real(wp),         allocatable :: tis_hb_dihedral_dih1(:)
     real(wp),         allocatable :: tis_hb_dihedral_dih2(:)
     real(wp),         allocatable :: tis_hb_dihedral_coef(:)
+    logical                       :: harmonic_tis_hbond
 
     ! TIS modified Weeks-Chandler-Andersen (mwca)
     real(wp)                      :: tis_mwca_a

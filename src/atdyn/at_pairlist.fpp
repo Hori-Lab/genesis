@@ -5295,16 +5295,21 @@ contains
       if (.not. do_allocate) num_mwca_pre(1:nthread) = 0
 
       !$omp parallel                                          &
+      !$omp firstprivate(do_allocate)                         &
       !$omp private(id, my_id, i, j, k, i_tis, j_tis,         &
       !$omp         i_atom, j_atom, i_cell, j_cell, i_nbcell, &
       !$omp         i_base_type, j_base_type,                 &
       !$omp         do_calc, ini_excl, fin_excl,              &
       !$omp         dij, dij_pbc, rij_sqr, pbc_int,           &
+      !$omp         i_is_TIS_base, i_is_TIS_sugar,            &
+      !$omp         i_is_TIS_phos, i_is_TIS,                  &
+      !$omp         j_is_TIS_base, j_is_TIS_sugar,            &
+      !$omp         j_is_TIS_phos, j_is_TIS,                  &
       !$omp         i_chain_id, j_chain_id)                   &
       !$omp shared(n_tis, box_size, pairdist_mwca_sqr,        &
       !$omp        icell_atom, cell_list_mwca, cell_head_mwca,&
       !$omp        num_mwca_pre, num_mwca, tis_list,          &
-      !$omp        nthread, do_allocate, my_city_rank,        &
+      !$omp        nthread, my_city_rank,        &
       !$omp        nproc_city, enefunc, boundary, coord_pbc,  &
       !$omp        pairlist)
       !
@@ -5315,8 +5320,6 @@ contains
 #endif
       my_id = my_city_rank * nthread + id
       id    = id + 1
-
-      ! write(*,*) "maxfind, ntis, nthread", n_tis, nthread
 
       do i_atom = 1, n_tis - 1
 
