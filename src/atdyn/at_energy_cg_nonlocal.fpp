@@ -3227,7 +3227,7 @@ contains
     real(wp)                  :: inv_rij_sqr, inv_rij_6th
     real(wp)                  :: sig_over_rij_6th, sig_over_rij_12th
     real(wp)                  :: grad_coef_hps, grad(3)
-    real(wp)                  :: ehps_tmp
+    real(wp)                  :: ehps_tmp, factor
 
     integer,  pointer         :: hps_list(:,:)
     integer,  pointer         :: num_hps_calc(:,:)
@@ -3235,6 +3235,7 @@ contains
     real(wp), pointer         :: hps_sigma_half(:)
     real(wp), pointer         :: hps_lambda_half(:)
     character(3), pointer     :: protein_residue(:)
+    integer, pointer          :: interact_type(:)
 
 
     call timer(TimerNonBond, TimerOn)
@@ -3251,6 +3252,7 @@ contains
     epsilon_aromatic =  enefunc%cg_IDR_Aromatic_epsilon
     epsilon_cationpi =  enefunc%cg_IDR_CationPI_epsilon
     protein_residue  => enefunc%HPS_atom_name
+    interact_type    => enefunc%interact_type
 
     cutoff           = enefunc%cg_cutoffdist_126
     cutoff_sqr       = cutoff * cutoff
@@ -3270,10 +3272,10 @@ contains
     !$omp         inv_rij_sqr, inv_rij_6th,            &
     !$omp         sig_over_rij_6th, sig_over_rij_12th, &
     !$omp         grad_coef_hps, grad, ehps_tmp,       &
-    !$omp         epsilon)                             &
+    !$omp         epsilon, factor)                     &
     !$omp shared(coord, my_city_rank, nproc_city,      &
     !$omp        nthread, natom,  epsilon_tmp,         &
-    !$omp        cutoff, cutoff_sqr,                   &
+    !$omp        cutoff, cutoff_sqr, interact_type,    &
     !$omp        hps_list, num_hps_calc,               &
     !$omp        hps_sigma_half, hps_lambda_half,      &
     !$omp        force, epsilon_aromatic,              &
@@ -3500,6 +3502,16 @@ contains
         sigma     = hps_sigma_half(i) + hps_sigma_half(j)
         sigma_sqr = sigma * sigma
 
+        if (interact_type(i) == 1 .and. interact_type(j) == 1) then
+          factor = 1.0_wp
+        else if (interact_type(i) == 2 .and. interact_type(j) == 2) then
+          factor = 0.7_wp 
+        else
+          factor = sqrt(0.7_wp)
+        end if
+
+        epsilon = epsilon * factor
+
         dij(1:3)  = coord(1:3,j) - coord(1:3,i)
         rij_sqr   = dij(1)*dij(1) + dij(2)*dij(2) + dij(3)*dij(3)
 
@@ -3613,6 +3625,7 @@ contains
     character(3), pointer     :: protein_residue(:)
     integer                   :: i_base_type, j_base_type
     integer, pointer :: atom_type(:)
+    integer, pointer :: interact_type(:)
 
 
     call timer(TimerNonBond, TimerOn)
@@ -3630,6 +3643,7 @@ contains
     epsilon_aromatic = enefunc%cg_IDR_Aromatic_epsilon
     epsilon_cationpi = enefunc%cg_IDR_CationPI_epsilon
     protein_residue  => enefunc%HPS_atom_name
+    interact_type    => enefunc%interact_type
 
     cutoff           = enefunc%cg_cutoffdist_126
     cutoff_sqr       = cutoff * cutoff
@@ -3675,7 +3689,7 @@ contains
     !$omp        virial_omp, ehps_omp,                 &
     !$omp        force, epsilon_aromatic,              &
     !$omp        epsilon_cationpi, protein_residue,    &
-    !$omp        atom_type)                            &
+    !$omp        atom_type, interact_type)             &
     !$omp reduction(+:virial) reduction(+:ehps)
     !
 #ifdef OMP
@@ -3916,6 +3930,16 @@ contains
 
           sigma     = hps_sigma_half_i_tmp + hps_sigma_half(j)
           sigma_sqr = sigma * sigma
+
+          if (interact_type(i) == 1 .and. interact_type(j) == 1) then
+            factor = 1.0_wp
+          else if (interact_type(i) == 2 .and. interact_type(j) == 2) then
+            factor = 0.7_wp 
+          else
+            factor = sqrt(0.7_wp)
+          end if
+
+          epsilon = epsilon * factor
 
           dij(1)  = coord(1,j) - coor_i_tmp(1) + bsize(1) * real(i1, wp)
           dij(2)  = coord(2,j) - coor_i_tmp(2) + bsize(2) * real(i2, wp)

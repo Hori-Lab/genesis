@@ -564,6 +564,7 @@ module at_enefunc_str_mod
     real(wp)                      :: cg_IDR_Aromatic_epsilon
     real(wp)                      :: cg_IDR_CationPI_epsilon
     character(3),     allocatable :: HPS_atom_name(:)
+    integer,          allocatable :: interact_type(:)
 
 
     ! ~CG~ : IDR KH model
@@ -1900,6 +1901,7 @@ contains
             enefunc%cg_IDR_HPS_lambda_half,   &
             enefunc%cg_IDR_HPS_sigma_half,    &
             enefunc%HPS_atom_name,            &
+            enefunc%interact_type,            &
             stat = dealloc_stat)
       end if
 
@@ -1907,12 +1909,14 @@ contains
           enefunc%cg_IDR_HPS_lambda_half(var_size), &
           enefunc%cg_IDR_HPS_sigma_half(var_size),  &
           enefunc%HPS_atom_name(var_size),          &
+          enefunc%interact_type(var_size),          &
           stat = alloc_stat)
 
       enefunc%cg_IDR_HPS_is_IDR     (1:var_size) = .false.
       enefunc%cg_IDR_HPS_lambda_half(1:var_size) = 0.0
       enefunc%cg_IDR_HPS_sigma_half(1:var_size)  = 0.0
       enefunc%HPS_atom_name(1:var_size)          = ''
+      enefunc%interact_type(1:var_size)          = 1
 
     case(EneFuncCGIDRKH)
       ! ~CG~ protein IDR KH model
@@ -3127,6 +3131,7 @@ contains
             enefunc%cg_IDR_HPS_lambda_half,   &
             enefunc%cg_IDR_HPS_sigma_half,    &
             enefunc%HPS_atom_name,            &
+            enefunc%interact_type,            &
             stat = dealloc_stat)
       end if
       if (allocated(enefunc%cg_particle_IDR_HPS)) then

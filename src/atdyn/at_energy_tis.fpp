@@ -679,7 +679,7 @@ contains
         force(1:3,j,id) = force(1:3,j,id) - grad(1:3)
 
         !if (dist > d_inf) then
-        enemwca = enemwca + eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
+        enemwca = enemwca + eps * (adr8*adr4 - 2*adr4*adr2 + 1.0_wp)
         !print *, 'i, j, dist, D, a, eps, ene', i, j, dist, D, a, eps, eps * (adr8*adr4 - 2*adr4*adr2 + 1.0e0_wp)
         !print *, 'dv_dr', dv_dr
         !print *, 'coord(i)', coord(1:3, i)
@@ -1102,7 +1102,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta124) > 0.99995_wp) then
           ! |c4212|^2 = |v42|^2 * |v12|^2 * sin(theta)^2
-          c4212_abs2 = d4242 * d1212 * (1.0 - 0.99995_wp**2)
+          c4212_abs2 = d4242 * d1212 * (1.0_wp - 0.99995_wp**2)
       endif
       if (abs(cos_theta312) > 0.99995_wp) then
           c1213_abs2 = d1212 * d1313 * (1.0_wp - 0.99995_wp**2)
@@ -1141,7 +1141,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       cos_theta531 = d1353 / (a13 * norm2(v53))
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta531) > 0.99995_wp) then
-          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0 - 0.99995_wp**2)
+          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0_wp - 0.99995_wp**2)
       endif
 
       pre = 2.0_wp * dih_coef(i) * d * a13
@@ -1176,7 +1176,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       cos_theta246 = d4246 / (a42 * norm2(v46))
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta246) > 0.99995_wp) then
-          c4246_abs2 = dot_product(v46,v46) * d4242 * (1.0 - 0.99995_wp**2)
+          c4246_abs2 = dot_product(v46,v46) * d4242 * (1.0_wp - 0.99995_wp**2)
       endif
 
       pre = 2.0_wp * dih_coef(i) * d * a42
@@ -1419,7 +1419,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta124) > 0.99995_wp) then
           ! |c4212|^2 = |v42|^2 * |v12|^2 * sin(theta)^2
-          c4212_abs2 = d4242 * d1212 * (1.0 - 0.99995_wp**2)
+          c4212_abs2 = d4242 * d1212 * (1.0_wp - 0.99995_wp**2)
       endif
       if (abs(cos_theta312) > 0.99995_wp) then
           c1213_abs2 = d1212 * d1313 * (1.0_wp - 0.99995_wp**2)
@@ -1458,7 +1458,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       cos_theta531 = d1353 / (a13 * norm2(v53))
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta531) > 0.99995_wp) then
-          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0 - 0.99995_wp**2)
+          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0_wp - 0.99995_wp**2)
       endif
 
       pre = 2.0_wp * dih_coef(i) * d * a13
@@ -1493,7 +1493,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       cos_theta246 = d4246 / (a42 * norm2(v46))
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta246) > 0.99995_wp) then
-          c4246_abs2 = dot_product(v46,v46) * d4242 * (1.0 - 0.99995_wp**2)
+          c4246_abs2 = dot_product(v46,v46) * d4242 * (1.0_wp - 0.99995_wp**2)
       endif
 
       pre = 2.0_wp * dih_coef(i) * d * a42
@@ -1738,10 +1738,10 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta124) > 0.99995_wp) then
           ! |c4212|^2 = |v42|^2 * |v12|^2 * sin(theta)^2
-          c4212_abs2 = d4242 * d1212 * (1.0 - 0.99995_wp**2)
+          c4212_abs2 = d4242 * d1212 * (1.0_wp - 0.99995_wp**2)
       endif
       if (abs(cos_theta312) > 0.99995_wp) then
-          c1213_abs2 = d1212 * d1313 * (1.0 - 0.99995_wp**2)
+          c1213_abs2 = d1212 * d1313 * (1.0_wp - 0.99995_wp**2)
       endif
 
       pre = - 2.0_wp * dih_c * d * a12
@@ -1777,7 +1777,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       cos_theta531 = d1353 / (a13 * norm2(v53))
       ! use maximum values at the limit angle 0.99995_wp
       if (abs(cos_theta531) > 0.99995_wp) then
-          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0 - 0.99995_wp**2)
+          c5313_abs2 = dot_product(v53,v53) * d1313 * (1.0_wp - 0.99995_wp**2)
       endif
 
       pre = - 2.0_wp * dih_c * d * a13
