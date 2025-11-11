@@ -1576,6 +1576,7 @@ contains
     integer                  :: i_chain_id, j_chain_id
     integer                  :: num_IDR_HPS_max
     integer                  :: id, my_id, nthread
+    integer                  :: i_domain_num, j_domain_num
 #ifdef OMP
     integer                  :: omp_get_thread_num, omp_get_max_threads
 #endif
@@ -1622,6 +1623,8 @@ contains
       !$omp         i_chain_id,         &
       !$omp         j_chain_id,         &
       !$omp         proceed, dij, rij2, &
+      !$omp         i_domain_num,       &
+      !$omp         j_domain_num,       &
       !$omp         i_is_TIS, j_is_TIS) &
       !$omp firstprivate(do_allocate)
       !
@@ -1649,12 +1652,14 @@ contains
         if (proceed) then
 
           i_chain_id  = enefunc%mol_chain_id(i)
+          i_domain_num = enefunc%domain_num(i)
 
           do j = i + 1, natom
 
             if (.not. enefunc%cg_IDR_HPS_is_IDR(j)) cycle
 
             j_chain_id  = enefunc%mol_chain_id(j)
+            j_domain_num = enefunc%domain_num(j)
             ! 
             if (i_chain_id == j_chain_id .and. i == j - 1) then
               cycle
@@ -1670,6 +1675,12 @@ contains
             ! don't include TIS-TIS interactions in HPS
             if (i_is_TIS .and. j_is_TIS) then
               cycle
+            end if
+            ! exclude HPS interactions between the same domain on the same chain unless either is an IDR (0)
+            if (i_chain_id == j_chain_id .and. i_domain_num == j_domain_num) then
+              if (i_domain_num /= 0 .and. j_domain_num /= 0) then
+                cycle
+              end if
             end if
 
             dij(1:3) = coord(1:3,i) - coord(1:3,j)
@@ -4112,6 +4123,7 @@ contains
     integer          :: i_chain_id, j_chain_id
     integer          :: pbc_int
     integer          :: i_base_type, j_base_type
+    integer          :: i_domain_num, j_domain_num
     ! 
     integer          :: ini_excl, fin_excl
     integer          :: num_idr_max
@@ -4189,6 +4201,8 @@ contains
       !$omp         dij, dij_pbc, rij_sqr,  &
       !$omp         i_chain_id, j_chain_id, &
       !$omp         i_is_TIS, j_is_TIS,     &
+      !$omp         i_domain_num,           &
+      !$omp         j_domain_num,           &
       !$omp         i_base_type,            &
       !$omp         j_base_type)            &
       !$omp firstprivate(do_allocate)
@@ -4210,6 +4224,7 @@ contains
           i_cell     = icell_atom(i_atom)
           i_chain_id = enefunc%mol_chain_id(i_atom)
           i_base_type = enefunc%NA_base_type(i_atom)
+          i_domain_num = enefunc%domain_num(i_atom)
 
           if (i_base_type == NABaseTypeTBA .or. i_base_type == NABaseTypeTBC .or. &
           i_base_type == NABaseTypeTBG .or. i_base_type == NABaseTypeTBU .or. &
@@ -4242,6 +4257,7 @@ contains
               ! get j properties
               ! 
               j_chain_id  = enefunc%mol_chain_id(j_atom)
+              j_domain_num = enefunc%domain_num(j_atom)
               
               do_calc = .true.
               ! 
@@ -4251,6 +4267,12 @@ contains
               ! exclude TIS-TIS interaction
               if ((i_is_TIS .and. j_is_TIS)) then
                 do_calc = .false.
+              end if
+              ! exclude HPS interactions between the same domain on the same chain unless either is an IDR (0)
+              if (i_chain_id == j_chain_id .and. i_domain_num == j_domain_num) then
+                if (i_domain_num /= 0 .and. j_domain_num /= 0) then
+                  do_calc = .false.
+                end if
               end if
               ! 
               if (.not. do_calc) then

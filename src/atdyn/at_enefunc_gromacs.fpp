@@ -2362,6 +2362,7 @@ contains
             n_idr_particles = n_idr_particles + 1
             enefunc%cg_IDR_HPS_is_IDR(l + ioffset) = .true.
             enefunc%interact_type(l + ioffset) = gromol%idr_hps(k)%interact_type
+            enefunc%domain_num(l + ioffset) = gromol%idr_hps(k)%domain_num
           end do                ! l
         end do                  ! k
 

@@ -241,6 +241,7 @@ module fileio_grotop_mod
     integer                        :: grp_start     = 0
     integer                        :: grp_end       = 0
     integer                        :: interact_type = 1
+    integer                        :: domain_num    = 0
   end type s_idr_hps
 
   ! ~CG~ protein IDR KH region
@@ -7806,8 +7807,8 @@ contains
       if (.not. gro_pp_next_line(file, line, error)) &
         goto 900
 
-      if (match_format(line, 'NNN')) then
-        read(line,*) hps%grp_start, hps%grp_end, hps%interact_type
+      if (match_format(line, 'NNNN')) then
+        read(line,*) hps%grp_start, hps%grp_end, hps%interact_type, hps%domain_num
       else if (match_format(line, 'NN')) then
         read(line,*) hps%grp_start, hps%grp_end
       else if (match_format(line, 'N')) then
