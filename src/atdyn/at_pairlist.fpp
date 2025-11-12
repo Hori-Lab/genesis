@@ -735,6 +735,7 @@ contains
     integer                  :: num_mwca_max
     integer                  :: i_base_type, j_base_type
     integer                  :: i_chain_id, j_chain_id
+    integer                  :: i_domain_num, j_domain_num
     integer                  :: id, my_id, nthread
 #ifdef OMP
     integer                  :: omp_get_thread_num, omp_get_max_threads
@@ -844,6 +845,7 @@ contains
       !$omp         proceed, j, nb15_calc, k, dij, rij2, &
       !$omp         is_nonlocal, is_WC_bp,               &
       !$omp         i_chain_id, j_chain_id,              &
+      !$omp         i_domain_num, j_domain_num,          &
       !$omp         i_is_idr, j_is_idr,                  &
       !$omp         i_is_DNA, j_is_DNA,                  &
       !$omp         i_is_TIS, j_is_TIS,                  &
@@ -1006,7 +1008,25 @@ contains
               if (i_is_DNA .and. j_is_DNA) then
                 ! go to DNA-DNA and do nothing here
               else if (i_is_idr .and. j_is_idr) then
+                i_domain_num = enefunc%domain_num(i)
+                j_domain_num = enefunc%domain_num(j)
+
+                if (i_chain_id == j_chain_id .and. i_domain_num == j_domain_num) then
+                  ! HPS is not applied between the same domains on the same chain
+                  if (i_domain_num /= 0 .and. j_domain_num /= 0) then
+                    num_exv(id) = num_exv(id) + 1
+                    if (.not. do_allocate) then
+                      pairlist%cg_exv_list(num_exv(id), id) = j
+                    end if
+
+                  else ! domain numbers are 0, HPS is applied
+                  ! go to idr-idr and do nothing here
+                  end if
+
+                else ! different chains or different domains, HPS is applied
                 ! go to idr-idr and do nothing here
+                end if
+
               else if (i_is_TIS .and. j_is_TIS) then
                 ! go to wca and do nothing here
               else if (ij_is_KH_pair) then
@@ -3070,6 +3090,7 @@ contains
     integer          :: i_nbcell
     integer          :: i_base_type, j_base_type
     integer          :: i_chain_id, j_chain_id
+    integer          :: i_domain_num, j_domain_num
     integer          :: pbc_int
     ! 
     integer          :: ini_excl, fin_excl
@@ -3152,6 +3173,8 @@ contains
       !$omp         i_base_type, j_base_type, &
       !$omp         i_chain_id, j_chain_id,   &
       !$omp         i_is_TIS, j_is_TIS,       &
+      !$omp         i_domain_num,             &
+      !$omp         j_domain_num,             &
       !$omp         pbc_int)                  &
       !$omp firstprivate(do_allocate)
       !
@@ -3243,8 +3266,28 @@ contains
               end if
 
               if (is_idr_i .and. is_idr_j) then
-                j_atom = cell_list_all(j_atom)
-                cycle
+                ! include EXV interactions between the same domain on the same chain
+                ! unless either is an IDR (domain num 0)
+                i_domain_num = enefunc%domain_num(i_atom)
+                j_domain_num = enefunc%domain_num(j_atom)
+                ! HPS always applies to different chains
+                if (i_chain_id /= j_chain_id) then
+                  j_atom = cell_list_all(j_atom)
+                  cycle
+
+                else if (i_chain_id == j_chain_id) then
+                  if (i_domain_num == j_domain_num) then
+                    ! HPS only applies if both domains are 0
+                    if (i_domain_num == 0 .and. j_domain_num == 0) then
+                      j_atom = cell_list_all(j_atom)
+                      cycle
+                    end if
+                  ! HPS applies between different domains
+                  else
+                    j_atom = cell_list_all(j_atom)
+                    cycle
+                  end if
+                end if
               end if
 
               !
@@ -4268,7 +4311,8 @@ contains
               if ((i_is_TIS .and. j_is_TIS)) then
                 do_calc = .false.
               end if
-              ! exclude HPS interactions between the same domain on the same chain unless either is an IDR (0)
+              ! exclude HPS interactions between the same domain on the same chain
+              ! unless either is an IDR domain num 0
               if (i_chain_id == j_chain_id .and. i_domain_num == j_domain_num) then
                 if (i_domain_num /= 0 .and. j_domain_num /= 0) then
                   do_calc = .false.
