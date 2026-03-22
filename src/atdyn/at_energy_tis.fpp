@@ -1195,7 +1195,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       ex = U0(i) * exp(ex)
       enehb = enehb + ex
       ! check this
-      for_hb(:,:) = enehb * for_hb(:,:)
+      for_hb(:,:) = ex * for_hb(:,:)
 
       force(1:3, i_atom,  id+1) = force(1:3, i_atom,  id+1) + for_hb(1:3, 1)
       force(1:3, j_atom,  id+1) = force(1:3, j_atom,  id+1) + for_hb(1:3, 2)
@@ -1512,7 +1512,7 @@ subroutine compute_energy_tis_mwca_pbc(enefunc, boundary, pairlist, &
       ex = U0(i) * exp(ex)
       enehb = enehb + ex
       ! check this
-      for_hb(:,:) = enehb * for_hb(:,:)
+      for_hb(:,:) = ex * for_hb(:,:)
 
       force(1:3, i_atom,  id+1) = force(1:3, i_atom,  id+1) + for_hb(1:3, 1)
       force(1:3, j_atom,  id+1) = force(1:3, j_atom,  id+1) + for_hb(1:3, 2)
